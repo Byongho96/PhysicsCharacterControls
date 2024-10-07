@@ -1,46 +1,53 @@
-import babel from "@rollup/plugin-babel";
-import resolve from "@rollup/plugin-node-resolve";
-import commonjs from "@rollup/plugin-commonjs";
-import typescript from "@rollup/plugin-typescript";
-import { terser } from "rollup-plugin-terser";
+import babel from '@rollup/plugin-babel';
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import typescript from '@rollup/plugin-typescript';
+import { terser } from 'rollup-plugin-terser';
 
-import serve from "rollup-plugin-serve";
-import livereload from "rollup-plugin-livereload";
+import serve from 'rollup-plugin-serve';
+import livereload from 'rollup-plugin-livereload';
 
-const isDev = process.env.NODE_ENV === "development";
+const isDev = process.env.NODE_ENV === 'development';
 
 export default {
-  input: "src/index.ts",
+  input: 'src/index.ts',
   output: [
     {
-      file: "dist/bundle.cjs.js",
-      format: "cjs",
-      exports: "auto",
+      file: 'dist/bundle.cjs.js',
+      format: 'cjs',
+      exports: 'auto',
     },
     {
-      file: "dist/bundle.esm.js",
-      format: "esm",
+      file: 'dist/bundle.esm.js',
+      format: 'esm',
+    },
+    {
+      file: 'dist/bundle.esm.min.js',
+      format: 'esm',
+      plugins: [terser()],
     },
   ],
+  external: ['three'],
   plugins: [
-    resolve(),
+    resolve({
+      extensions: ['.js', '.ts'],
+    }),
     commonjs(),
     typescript(),
     babel({
-      babelHelpers: "bundled",
-      presets: ["@babel/preset-env"],
+      babelHelpers: 'bundled',
+      presets: ['@babel/preset-env'],
     }),
-    terser(),
     isDev &&
       serve({
         open: true,
-        contentBase: ["."],
-        openPage: "/public/index.html",
+        contentBase: ['.'],
+        openPage: '/public/index.html',
         port: 3000,
       }),
     isDev &&
       livereload({
-        watch: ["dist", "public"],
+        watch: ['dist', 'public'],
       }),
   ].filter(Boolean),
   watch: {
