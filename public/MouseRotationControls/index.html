@@ -3,10 +3,7 @@
   <head>
     <title>Physics Character Controls - Supported by Three.js</title>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
     <link type="text/css" rel="stylesheet" href="main.css" />
   </head>
   <body>
@@ -126,72 +123,30 @@
 
         // GUI - Physics
         const folder2 = gui.addFolder('Physics');
-        folder2
-          .add(controls, 'groundMoveSpeed', 0, 40)
-          .name('ground move speed')
-          .listen();
-        folder2
-          .add(controls, 'floatMoveSpeed', 0, 20)
-          .name('float move speed')
-          .listen();
-        folder2
-          .add(controls, 'rotateSpeed', 0, 2)
-          .name('rotate speed')
-          .listen();
+        folder2.add(controls, 'groundMoveSpeed', 0, 40).name('ground move speed').listen();
+        folder2.add(controls, 'floatMoveSpeed', 0, 20).name('float move speed').listen();
+        folder2.add(controls, 'rotateSpeed', 0, 2).name('rotate speed').listen();
         folder2.add(controls, 'jumpForce', 0, 30).name('jump force').listen();
         folder2.add(controls, 'gravity', 0, 50).name('gravity').listen();
-        folder2
-          .add(controls, 'maxFallSpeed', 0, 40)
-          .name('max fall speed')
-          .listen();
-        folder2
-          .add(controls, 'movementResistance', 0, 10)
-          .name('resistance')
-          .listen();
+        folder2.add(controls, 'maxFallSpeed', 0, 40).name('max fall speed').listen();
+        folder2.add(controls, 'movementResistance', 0, 10).name('resistance').listen();
 
         // GUI - Animation
         const folder3 = gui.addFolder('Animation');
-        folder3
-          .add(controls, 'moveSpeedThreshold', 1, 10)
-          .name('move speed threshold')
-          .listen();
-        folder3
-          .add(controls, 'fallSpeedThreshold', 1, 30)
-          .name('fall speed threshold')
-          .listen();
-        folder3
-          .add(controls, 'transitionTime', 0, 1)
-          .name('transition time')
-          .listen();
+        folder3.add(controls, 'moveSpeedThreshold', 1, 10).name('move speed threshold').listen();
+        folder3.add(controls, 'fallSpeedThreshold', 1, 30).name('fall speed threshold').listen();
+        folder3.add(controls, 'transitionTime', 0, 1).name('transition time').listen();
 
         // GUI - Camera
         const folder4 = gui.addFolder('Camera');
         const cameraPosition = folder4.addFolder('Position');
-        cameraPosition
-          .add(controls.cameraPosOffset, 'x', -10, 10)
-          .name('x')
-          .listen();
-        cameraPosition
-          .add(controls.cameraPosOffset, 'y', -10, 10)
-          .name('y')
-          .listen();
-        cameraPosition
-          .add(controls.cameraPosOffset, 'z', -10, 10)
-          .name('z')
-          .listen();
+        cameraPosition.add(controls.cameraPosOffset, 'x', -10, 10).name('x').listen();
+        cameraPosition.add(controls.cameraPosOffset, 'y', -10, 10).name('y').listen();
+        cameraPosition.add(controls.cameraPosOffset, 'z', -10, 10).name('z').listen();
         const cameraLookAt = folder4.addFolder('LookAt');
-        cameraLookAt
-          .add(controls.cameraLookAtOffset, 'x', -10, 10)
-          .name('x')
-          .listen();
-        cameraLookAt
-          .add(controls.cameraLookAtOffset, 'y', -10, 10)
-          .name('y')
-          .listen();
-        cameraLookAt
-          .add(controls.cameraLookAtOffset, 'z', -10, 10)
-          .name('z')
-          .listen();
+        cameraLookAt.add(controls.cameraLookAtOffset, 'x', -10, 10).name('x').listen();
+        cameraLookAt.add(controls.cameraLookAtOffset, 'y', -10, 10).name('y').listen();
+        cameraLookAt.add(controls.cameraLookAtOffset, 'z', -10, 10).name('z').listen();
       });
 
       // Scene
@@ -199,12 +154,7 @@
       scene.background = new THREE.Color(0x88ccee);
 
       // Camera
-      const camera = new THREE.PerspectiveCamera(
-        70,
-        window.innerWidth / window.innerHeight,
-        1,
-        1000,
-      );
+      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
       camera.rotation.order = 'YXZ';
 
       // Light
@@ -268,23 +218,12 @@
 
       // Dispose function
       function dispose() {
-        // Stop the animation loop
         renderer.setAnimationLoop(null);
 
-        // Remove event listeners
         window.removeEventListener('resize', onWindowResize);
+
         controls && controls.disconnect();
-
-        // Dispose of controls and helpers
-        if (controls) {
-          controls = null;
-        }
-        if (helpers) {
-          scene.remove(helpers);
-          helpers = null;
-        }
-
-        // Dispose of renderer
+        helpers && helpers.dispose();
         renderer.dispose();
 
         // Dispose of scene objects
@@ -306,7 +245,6 @@
         }
       }
 
-      // Call dispose on unload
       window.addEventListener('beforeunload', dispose);
     </script>
   </body>
