@@ -1,34 +1,24 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>physics character controls - supported by three.js</title>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
-    />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CharacterPhysicsControls</title>
     <link type="text/css" rel="stylesheet" href="main.css" />
   </head>
   <body>
-    <div id="info">
-      Physics character controls demo <br />
-      WASD to move and SPACE to jump
-    </div>
-    <div id="container"></div>
-
-    <script type="importmap">
-      {
-        "imports": {
-          "physics-character-controls": "../dist/bundle.esm.js",
-          "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
-        }
-      }
-    </script>
-    <script type="module">
-      import sayHello from "physics-character-controls";
-
-      sayHello();
-    </script>
+    <h1>CharacterPhysicsControls</h1>
+    <p>
+      This is a demo of the CharacterPhysicsControls class. It is a simple
+      physics-based character controller for three.js. It uses the three.js
+      OCtree module to handle collisions.
+    </p>
+    <ul>
+      <li>
+        <a href="/public/KeyboardRotationControls/index.html"
+          >KeyboardRotationControls</a
+        >
+      </li>
+    </ul>
   </body>
 </html>
