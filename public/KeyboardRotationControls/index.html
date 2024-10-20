@@ -3,10 +3,7 @@
   <head>
     <title>Physics Character Controls - Supported by Three.js</title>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
     <link type="text/css" rel="stylesheet" href="main.css" />
   </head>
   <body>
@@ -19,7 +16,7 @@
     <script type="importmap">
       {
         "imports": {
-          "physics-character-controls": "/dist/bundle.esm.js",
+          "physics-character-controls": "../../dist/bundle.esm.js",
           "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
           "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
         }
@@ -50,173 +47,116 @@
       let helpers;
 
       Promise.all([
-        gltfLoader.loadAsync('/public/assets/models/collision-world.glb'),
-        gltfLoader.loadAsync('/public/assets/models/x_bot.glb'),
-        gltfLoader.loadAsync('/public/assets/animations/idle.glb'),
-        gltfLoader.loadAsync('/public/assets/animations/running.glb'),
-        gltfLoader.loadAsync('/public/assets/animations/running_backwards.glb'),
-        gltfLoader.loadAsync('/public/assets/animations/jumping.glb'),
-        gltfLoader.loadAsync('/public/assets/animations/falling.glb'),
-      ]).then(
-        ([
-          world,
-          character,
-          idle,
-          walking,
-          walkingBackwards,
-          jumping,
-          falling,
-        ]) => {
-          scene.add(world.scene);
-          world.scene.traverse(child => {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
+        gltfLoader.loadAsync('../assets/models/collision-world.glb'),
+        gltfLoader.loadAsync('../assets/models/x_bot.glb'),
+        gltfLoader.loadAsync('../assets/animations/idle.glb'),
+        gltfLoader.loadAsync('../assets/animations/running.glb'),
+        gltfLoader.loadAsync('../assets/animations/running_backwards.glb'),
+        gltfLoader.loadAsync('../assets/animations/jumping.glb'),
+        gltfLoader.loadAsync('../assets/animations/falling.glb'),
+      ]).then(([world, character, idle, walking, walkingBackwards, jumping, falling]) => {
+        scene.add(world.scene);
+        world.scene.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
 
-          scene.add(character.scene);
-          character.scene.position.set(0, 0, 0);
-          character.scene.scale.set(0.7, 0.7, 0.7);
-          character.scene.traverse(child => {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
+        scene.add(character.scene);
+        character.scene.position.set(0, 0, 0);
+        character.scene.scale.set(0.7, 0.7, 0.7);
+        character.scene.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
 
-          controls = new KeyboardRotationControls(
-            character.scene,
-            renderer.domElement,
-            world.scene,
-            {
-              forward: ['ArrowUp', 'w'],
-              backward: ['ArrowDown', 's'],
-              leftTurn: ['ArrowLeft', 'a'],
-              rightTurn: ['ArrowRight', 'd'],
-              jump: [' '],
-            },
-            {
-              camera,
-              posOffset: new THREE.Vector3(0, 2, -2),
-              lookAtOffset: new THREE.Vector3(0, 1, 0),
-            },
-            {
-              idle: idle.animations[0],
-              forward: walking.animations[0],
-              backward: walkingBackwards.animations[0],
-              jump: jumping.animations[0],
-              fall: falling.animations[0],
-            },
-            {
-              boundary: {
-                resetPoint: new THREE.Vector3(0, 0, 0),
-                x: {
-                  min: -20,
-                  max: 30,
-                },
-                y: {
-                  min: -10,
-                  max: 20,
-                },
-                z: {
-                  min: -20,
-                  max: 30,
-                },
+        controls = new KeyboardRotationControls(
+          character.scene,
+          renderer.domElement,
+          world.scene,
+          {
+            forward: ['ArrowUp', 'w'],
+            backward: ['ArrowDown', 's'],
+            leftTurn: ['ArrowLeft', 'a'],
+            rightTurn: ['ArrowRight', 'd'],
+            jump: [' '],
+          },
+          {
+            camera,
+            posOffset: new THREE.Vector3(0, 2, -2),
+            lookAtOffset: new THREE.Vector3(0, 1, 0),
+          },
+          {
+            idle: idle.animations[0],
+            forward: walking.animations[0],
+            backward: walkingBackwards.animations[0],
+            jump: jumping.animations[0],
+            fall: falling.animations[0],
+          },
+          {
+            boundary: {
+              resetPoint: new THREE.Vector3(0, 0, 0),
+              x: {
+                min: -20,
+                max: 30,
+              },
+              y: {
+                min: -10,
+                max: 20,
+              },
+              z: {
+                min: -20,
+                max: 30,
               },
             },
-          );
+          },
+        );
 
-          helpers = new PhysicsControlsHelper(controls, 0xffffff);
-          helpers.visible = false;
-          scene.add(helpers);
+        helpers = new PhysicsControlsHelper(controls, 0xffffff);
+        helpers.visible = false;
+        scene.add(helpers);
 
-          // GUI - Debug
-          const folder1 = gui.addFolder('Debug');
-          folder1.add(helpers, 'visible').name('debug').listen();
+        // GUI - Debug
+        const folder1 = gui.addFolder('Debug');
+        folder1.add(helpers, 'visible').name('debug').listen();
 
-          // GUI - Physics
-          const folder2 = gui.addFolder('Physics');
-          folder2
-            .add(controls, 'groundMoveSpeed', 0, 40)
-            .name('ground move speed')
-            .listen();
-          folder2
-            .add(controls, 'floatMoveSpeed', 0, 20)
-            .name('float move speed')
-            .listen();
-          folder2
-            .add(controls, 'rotateSpeed', 0, 10)
-            .name('rotate speed')
-            .listen();
-          folder2.add(controls, 'jumpForce', 0, 30).name('jump force').listen();
-          folder2.add(controls, 'gravity', 0, 50).name('gravity').listen();
-          folder2
-            .add(controls, 'maxFallSpeed', 0, 40)
-            .name('max fall speed')
-            .listen();
-          folder2
-            .add(controls, 'movementResistance', 0, 10)
-            .name('resistance')
-            .listen();
+        // GUI - Physics
+        const folder2 = gui.addFolder('Physics');
+        folder2.add(controls, 'groundMoveSpeed', 0, 40).name('ground move speed').listen();
+        folder2.add(controls, 'floatMoveSpeed', 0, 20).name('float move speed').listen();
+        folder2.add(controls, 'rotateSpeed', 0, 10).name('rotate speed').listen();
+        folder2.add(controls, 'jumpForce', 0, 30).name('jump force').listen();
+        folder2.add(controls, 'gravity', 0, 50).name('gravity').listen();
+        folder2.add(controls, 'maxFallSpeed', 0, 40).name('max fall speed').listen();
+        folder2.add(controls, 'movementResistance', 0, 10).name('resistance').listen();
 
-          // GUI - Animation
-          const folder3 = gui.addFolder('Animation');
-          folder3
-            .add(controls, 'moveSpeedThreshold', 1, 10)
-            .name('move speed threshold')
-            .listen();
-          folder3
-            .add(controls, 'fallSpeedThreshold', 1, 30)
-            .name('fall speed threshold')
-            .listen();
-          folder3
-            .add(controls, 'transitionTime', 0, 1)
-            .name('transition time')
-            .listen();
+        // GUI - Animation
+        const folder3 = gui.addFolder('Animation');
+        folder3.add(controls, 'moveSpeedThreshold', 1, 10).name('move speed threshold').listen();
+        folder3.add(controls, 'fallSpeedThreshold', 1, 30).name('fall speed threshold').listen();
+        folder3.add(controls, 'transitionTime', 0, 1).name('transition time').listen();
 
-          // GUI - Camera
-          const folder4 = gui.addFolder('Camera');
-          const cameraPosition = folder4.addFolder('Position');
-          cameraPosition
-            .add(controls.cameraPosOffset, 'x', -10, 10)
-            .name('x')
-            .listen();
-          cameraPosition
-            .add(controls.cameraPosOffset, 'y', -10, 10)
-            .name('y')
-            .listen();
-          cameraPosition
-            .add(controls.cameraPosOffset, 'z', -10, 10)
-            .name('z')
-            .listen();
-          const cameraLookAt = folder4.addFolder('LookAt');
-          cameraLookAt
-            .add(controls.cameraLookAtOffset, 'x', -10, 10)
-            .name('x')
-            .listen();
-          cameraLookAt
-            .add(controls.cameraLookAtOffset, 'y', -10, 10)
-            .name('y')
-            .listen();
-          cameraLookAt
-            .add(controls.cameraLookAtOffset, 'z', -10, 10)
-            .name('z')
-            .listen();
-        },
-      );
+        // GUI - Camera
+        const folder4 = gui.addFolder('Camera');
+        const cameraPosition = folder4.addFolder('Position');
+        cameraPosition.add(controls.cameraPosOffset, 'x', -10, 10).name('x').listen();
+        cameraPosition.add(controls.cameraPosOffset, 'y', -10, 10).name('y').listen();
+        cameraPosition.add(controls.cameraPosOffset, 'z', -10, 10).name('z').listen();
+        const cameraLookAt = folder4.addFolder('LookAt');
+        cameraLookAt.add(controls.cameraLookAtOffset, 'x', -10, 10).name('x').listen();
+        cameraLookAt.add(controls.cameraLookAtOffset, 'y', -10, 10).name('y').listen();
+        cameraLookAt.add(controls.cameraLookAtOffset, 'z', -10, 10).name('z').listen();
+      });
 
       // Scene
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0x88ccee);
 
       // Camera
-      const camera = new THREE.PerspectiveCamera(
-        70,
-        window.innerWidth / window.innerHeight,
-        1,
-        1000,
-      );
+      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
       camera.rotation.order = 'YXZ';
 
       // Light
@@ -280,24 +220,12 @@
 
       // Dispose function
       function dispose() {
-        // Stop the animation loop
         renderer.setAnimationLoop(null);
 
-        // Remove event listeners
         window.removeEventListener('resize', onWindowResize);
+
         controls && controls.disconnect();
-
-        // Dispose of controls and helpers
-        if (controls) {
-          controls.dispose(); // If your controls have a dispose method
-          controls = null;
-        }
-        if (helpers) {
-          scene.remove(helpers);
-          helpers = null;
-        }
-
-        // Dispose of renderer
+        helpers && helpers.dispose();
         renderer.dispose();
 
         // Dispose of scene objects
@@ -319,7 +247,6 @@
         }
       }
 
-      // Call dispose on unload
       window.addEventListener('beforeunload', dispose);
     </script>
   </body>
