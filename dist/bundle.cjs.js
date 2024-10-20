@@ -441,223 +441,343 @@ var Octree = /*#__PURE__*/function () {
   }]);
 }();
 
+class ColliderCapsule extends Capsule {
+    constructor(start, end, radius) {
+        super(start, end, radius);
+    }
+    get height() {
+        return this.start.distanceTo(this.end) + 2 * this.radius;
+    }
+}
+
+/**
+ * Predefined event objects for reuse when dispatching events.
+ */
 const _collideEvent = { type: 'collide' };
 const _fallEvent = { type: 'fall' };
-const _groundEvent = { type: 'ground' };
+const _groundedEvent = { type: 'grounded' };
+/**
+ * PhysicsControls class that adds physics-based controls to a 3D object.
+ */
 class PhysicsControls extends three.Controls {
+    /**
+     * Constructs a new PhysicsControls instance.
+     * @param object - The 3D object to apply physics controls to.
+     * @param domElement - The HTML element for event listeners (optional).
+     * @param world - The world object used to build the collision octree.
+     * @param physicsOptions - Optional physics configuration.
+     */
     constructor(object, domElement, world, physicsOptions) {
+        var _a, _b, _c;
         super(object, domElement);
-        this._isGrounded = false;
         this.velocity = new three.Vector3();
-        this.height = (physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.height) || this.getSize(object).y;
-        this.radius = (physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.radius) || this.getSize(object).y / 4;
-        this.resistance = (physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.resistance) || 4;
-        this._collider = new Capsule(new three.Vector3(0, this.radius, 0), new three.Vector3(0, this.height - this.radius, 0), this.radius);
-        this._collider.translate(object.position);
-        this.gravity = (physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.gravity) || 30;
-        this.maxFallSpeed = (physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.maxFallSpeed) || 60;
-        this.boundary = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.boundary;
+        this._isGrounded = false;
+        this._deltaPosition = new three.Vector3(); // Temporary vector for delta position calculations
+        // Create an octree from the world for collision detection.
         this._worldOctree = new Octree();
         this._worldOctree.fromGraphNode(world);
-    }
-    get collider() {
-        return this._collider;
+        // Create a capsule collider for the player.
+        const objectSize = new three.Vector3();
+        new three.Box3().setFromObject(this.object).getSize(objectSize);
+        const radius = (physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.colliderRadius) || objectSize.y / 4;
+        const height = (physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.colliderHeight) || objectSize.y;
+        this._capsuleCollider = new ColliderCapsule(new three.Vector3(0, radius, 0), new three.Vector3(0, height - radius, 0), radius);
+        this._capsuleCollider.translate(object.position);
+        // Set physics properties
+        this.gravity = (_a = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.gravity) !== null && _a !== void 0 ? _a : 30;
+        this.maxFallSpeed = (_b = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.maxFallSpeed) !== null && _b !== void 0 ? _b : 20;
+        this.movementResistance = (_c = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.movementResistance) !== null && _c !== void 0 ? _c : 4;
+        // Set boundary properties if provided.
+        this.boundary = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.boundary;
     }
     get isGrounded() {
         return this._isGrounded;
     }
-    getSize(object) {
-        const box = new three.Box3().setFromObject(object);
-        const size = new three.Vector3();
-        box.getSize(size);
-        return size;
+    get collider() {
+        return this._capsuleCollider;
     }
+    /**
+     * Checks for collisions between the player's collider and the world octree.
+     * Updates the player's grounded state and adjusts velocity and position accordingly.
+     */
     checkCollisions() {
-        const result = this._worldOctree.capsuleIntersect(this._collider);
         this._isGrounded = false;
-        if (!result)
+        const collisionResult = this._worldOctree.capsuleIntersect(this._capsuleCollider);
+        if (!collisionResult)
             return;
         this.dispatchEvent(_collideEvent);
-        if (result.normal.y > 0) {
-            this.dispatchEvent(_groundEvent);
+        if (collisionResult.normal.y > 0) {
+            // Player is grounded.
             this._isGrounded = true;
+            this.dispatchEvent(_groundedEvent);
         }
-        if (!this._isGrounded) {
-            this.velocity.addScaledVector(result.normal, -result.normal.dot(this.velocity));
+        else {
+            // Player is colliding but not grounded.
+            this.velocity.addScaledVector(collisionResult.normal, -collisionResult.normal.dot(this.velocity));
             this.dispatchEvent(_fallEvent);
         }
-        if (result.depth >= 1e-10) {
-            this.collider.translate(result.normal.multiplyScalar(result.depth));
+        // Adjust the collider position to resolve penetration.
+        if (collisionResult.depth >= 1e-10) {
+            this._capsuleCollider.translate(collisionResult.normal.multiplyScalar(collisionResult.depth));
         }
     }
+    /**
+     * Updates the player's physics state.
+     * @param delta - The time step for the update (in seconds).
+     */
     update(delta) {
         if (!this.enabled)
             return;
-        let damping = Math.exp(-this.resistance * delta) - 1;
+        super.update(delta);
+        // Apply movement resistance (damping).
+        let damping = Math.exp(-this.movementResistance * delta) - 1;
         if (!this._isGrounded) {
-            this.velocity.y -= Math.min(this.gravity * delta, this.maxFallSpeed);
-            // small air resistance
-            damping *= 0.1;
+            this.velocity.y -= this.gravity * delta;
+            this.velocity.y = Math.max(this.velocity.y, -this.maxFallSpeed);
+            damping *= 0.1; // Small air resistance
         }
         this.velocity.addScaledVector(this.velocity, damping);
-        const deltaPosition = this.velocity.clone().multiplyScalar(delta);
-        this._collider.translate(deltaPosition);
+        this._deltaPosition.copy(this.velocity).multiplyScalar(delta);
+        this._capsuleCollider.translate(this._deltaPosition);
         this.checkCollisions();
-        this.teleportPlayerIfOob();
-        this.object.position.copy(this._collider.end).y -=
-            this.height / 2 + this.radius;
+        this.teleportPlayerIfOutOfBounds();
+        // Update the object's position to match the collider.
+        this.object.position.copy(this._capsuleCollider.start);
+        this.object.position.y -= this._capsuleCollider.radius;
     }
-    teleportPlayerIfOob() {
+    /**
+     * Resets the player's position if they are out of the defined world boundaries.
+     */
+    teleportPlayerIfOutOfBounds() {
         if (!this.boundary)
             return;
         const { resetPoint, x, y, z } = this.boundary;
-        if (this.object.position.x < x[0] ||
-            this.object.position.x > x[1] ||
-            this.object.position.y < y[0] ||
-            this.object.position.y > y[1] ||
-            this.object.position.z < z[0] ||
-            this.object.position.z > z[1]) {
+        const { x: px, y: py, z: pz } = this.object.position;
+        // Check if the player is out of bounds.
+        if (px < x.min || px > x.max || py < y.min || py > y.max || pz < z.min || pz > z.max) {
+            this._capsuleCollider.start.set(resetPoint.x, resetPoint.y + this._capsuleCollider.radius, resetPoint.z);
+            this._capsuleCollider.end.set(resetPoint.x, resetPoint.y + this._capsuleCollider.height - this._capsuleCollider.radius, resetPoint.z);
             this.object.position.copy(resetPoint);
-            this._collider.start.set(resetPoint.x, resetPoint.y + this.radius, resetPoint.z);
-            this._collider.end.set(resetPoint.x, resetPoint.y + this.height - this.radius, resetPoint.z);
             this.velocity.set(0, 0, 0);
         }
     }
+    connect() {
+        super.connect();
+    }
+    disconnect() {
+        super.disconnect();
+    }
+    dispose() {
+        super.dispose();
+    }
 }
 
+/**
+ * Class representing a character or group of characters with animations.
+ */
 class Characters {
-    constructor(object, animationClips) {
+    /**
+     * Constructs a new Characters instance.
+     * @param object - The initial Object3D to add to the character.
+     * @param _animationClips - Optional initial animation clips.
+     */
+    constructor(object, _animationClips) {
         this._animationClips = {};
         this._animationActions = {};
-        this.objectGroup = new three.AnimationObjectGroup(object);
-        this.mixer = new three.AnimationMixer(this.objectGroup);
-        if (!animationClips)
-            return;
-        Object.entries(animationClips).forEach(([key, clip]) => {
-            this.setAnimationClip(key, clip);
-        });
+        this._objectGroup = new three.AnimationObjectGroup(object);
+        this._mixer = new three.AnimationMixer(this._objectGroup);
+        if (_animationClips) {
+            Object.entries(_animationClips).forEach(([key, clip]) => {
+                this.setAnimationClip(key, clip);
+            });
+        }
     }
-    get animationClips() {
+    /**
+     * Returns a read-only copy of the animation clips.
+     */
+    get clips() {
         return Object.freeze(Object.assign({}, this._animationClips));
     }
+    /**
+     * Adds an object to the animation object group.
+     * @param object - The Object3D to add.
+     */
     addObject(object) {
-        this.objectGroup.add(object);
+        this._objectGroup.add(object);
     }
+    /**
+     * Removes an object from the animation object group.
+     * @param object - The Object3D to remove.
+     */
     removeObject(object) {
-        this.objectGroup.remove(object);
+        this._objectGroup.remove(object);
     }
+    /**
+     * Adds an animation clip and its corresponding action.
+     * @param key - The identifier for the animation clip.
+     * @param clip - The AnimationClip to add.
+     */
     setAnimationClip(key, clip) {
-        const action = this.mixer.clipAction(clip);
+        const action = this._mixer.clipAction(clip);
         this._animationClips[key] = clip;
         this._animationActions[key] = action;
     }
+    /**
+     * Removes an animation clip and its corresponding action.
+     * @param key - The identifier for the animation clip to remove.
+     */
     removeAnimationClip(key) {
         const clip = this._animationClips[key];
         if (!clip)
             return;
         const action = this._animationActions[key];
-        if (!action)
-            return;
-        action.stop();
-        this.mixer.uncacheClip(clip);
-        this.mixer.uncacheAction(clip, this.objectGroup);
+        if (action) {
+            action.stop();
+            this._mixer.uncacheAction(clip, this._objectGroup);
+        }
+        this._mixer.uncacheClip(clip);
         delete this._animationClips[key];
         delete this._animationActions[key];
     }
+    /**
+     * Smoothly transitions to the specified animation action over a given duration.
+     * @param key - The identifier for the animation action to transition to.
+     * @param duration - The duration of the transition in seconds.
+     */
     fadeToAction(key, duration) {
         const action = this._animationActions[key];
-        if (!action)
+        if (!action || action.isRunning())
             return;
-        if (action.isRunning())
-            return;
-        Object.values(this._animationActions).forEach(action => {
-            action.fadeOut(duration);
+        // Fade out all current actions
+        Object.values(this._animationActions).forEach(currentAction => {
+            currentAction.fadeOut(duration);
         });
-        action.reset(); // 새로운 액션을 처음부터 재생
+        action.reset(); // Reset the action to start from the beginning
         action.fadeIn(duration);
-        action.play(); // 액션을 재생합니다.
+        action.play(); // Play the action
     }
+    /**
+     * Updates the _mixer with the given delta time.
+     * @param delta - The time increment in seconds.
+     */
     update(delta) {
-        this.mixer.update(delta);
+        this._mixer.update(delta);
     }
+    /**
+     * Stops all actions and disposes of the _mixer.
+     */
     dispose() {
-        this.mixer.stopAllAction();
-        this.mixer.uncacheRoot(this.objectGroup);
+        this._mixer.stopAllAction();
+        this._mixer.uncacheRoot(this._objectGroup);
     }
 }
 
+/**
+ * Global object to track the current state of pressed keys.
+ */
 const keyStates = {};
+/**
+ * KeyboardRotationControls class allows controlling an object using keyboard input,
+ * including movement, rotation, physics simulation, camera control, and animations.
+ */
 class KeyboardRotationControls extends PhysicsControls {
+    /**
+     * Constructs a new KeyboardRotationControls instance.
+     * @param object - The 3D object to control.
+     * @param domElement - The HTML element for event listeners (optional).
+     * @param worldObject - The world object used for physics collision.
+     * @param keyOptions - Key mappings for actions.
+     * @param cameraOptions - Configuration for the camera (optional).
+     * @param animationOptions - Configuration for animations (optional).
+     * @param physicsOptions - Physics configuration options (optional).
+     */
     constructor(object, domElement, worldObject, keyOptions, cameraOptions, animationOptions, physicsOptions) {
+        var _a, _b, _c, _d, _e, _f, _g;
         super(object, domElement, worldObject, physicsOptions);
         this.camera = null;
         this.cameraPosOffset = null;
         this.cameraLookAtOffset = null;
-        this._vector1 = new three.Vector3();
+        this._tempVector = new three.Vector3(); // Temporary vector for calculations
         this._direction = new three.Vector3();
+        // Initialize character animations.
         const { idle, forward, backward, jump, fall } = animationOptions || {};
         this._characters = new Characters(object, Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, (idle && { idle })), (forward && { forward })), (backward && { backward })), (jump && { jump })), (fall && { fall })));
+        // Set key mappings.
         this.keyOptions = keyOptions;
+        // Initialize camera options if provided.
         if (cameraOptions) {
             this.camera = cameraOptions.camera;
-            this.cameraPosOffset = cameraOptions.posOffset;
-            this.cameraLookAtOffset = cameraOptions.lookAtOffset;
+            this.cameraPosOffset = cameraOptions.posOffset.clone();
+            this.cameraLookAtOffset = cameraOptions.lookAtOffset.clone();
         }
-        this.jumpForce = (physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.jumpForce) || 15;
-        this.groundMoveSpeed = (physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.groundMoveSpeed) || 25;
-        this.floatMoveSpeed = (physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.floatMoveSpeed) || 8;
-        this.rotateSpeed = (physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) || 1;
-        this.transitionTime = (animationOptions === null || animationOptions === void 0 ? void 0 : animationOptions.transitionTime) || 0.3;
-        this.fallSpeedThreshold = (animationOptions === null || animationOptions === void 0 ? void 0 : animationOptions.fallSpeedThreshold) || 15;
-        this.moveSpeedThreshold = (animationOptions === null || animationOptions === void 0 ? void 0 : animationOptions.moveSpeedThreshold) || 1;
-        this._onKeyDown = onKeyDown.bind(this);
-        this._onKeyUp = onKeyUp.bind(this);
+        // Set physics parameters with defaults if not provided.
+        this.jumpForce = (_a = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.jumpForce) !== null && _a !== void 0 ? _a : 15;
+        this.groundMoveSpeed = (_b = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.groundMoveSpeed) !== null && _b !== void 0 ? _b : 25;
+        this.floatMoveSpeed = (_c = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.floatMoveSpeed) !== null && _c !== void 0 ? _c : 8;
+        this.rotateSpeed = (_d = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _d !== void 0 ? _d : 1;
+        // Set animation options with defaults if not provided.
+        this.transitionTime = (_e = animationOptions === null || animationOptions === void 0 ? void 0 : animationOptions.transitionTime) !== null && _e !== void 0 ? _e : 0.3;
+        this.fallSpeedThreshold = (_f = animationOptions === null || animationOptions === void 0 ? void 0 : animationOptions.fallSpeedThreshold) !== null && _f !== void 0 ? _f : 15;
+        this.moveSpeedThreshold = (_g = animationOptions === null || animationOptions === void 0 ? void 0 : animationOptions.moveSpeedThreshold) !== null && _g !== void 0 ? _g : 1;
+        // Bind key event handlers.
+        this.onKeyDownHandler = this.onKeyDown.bind(this);
+        this.onKeyUpHandler = this.onKeyUp.bind(this);
+        // Connect controls to key events.
         this.connect();
     }
+    /**
+     * Retrieves the forward _direction vector of the object, ignoring the Y-axis.
+     * @returns A normalized Vector3 representing the forward _direction.
+     */
     getForwardVector() {
         this.object.getWorldDirection(this._direction);
         this._direction.y = 0;
         this._direction.normalize();
         return this._direction;
     }
-    getSideVector() {
-        this.object.getWorldDirection(this._direction);
-        this._direction.y = 0;
-        this._direction.normalize();
-        this._direction.cross(this.object.up);
-        return this._direction;
-    }
+    /**
+     * Updates movement and rotation based on the current keyboard input.
+     * @param delta - The time delta for frame-independent movement.
+     */
     updateControls(delta) {
         var _a, _b, _c, _d, _e;
         const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        // Move forward.
         if ((_a = this.keyOptions.forward) === null || _a === void 0 ? void 0 : _a.some(key => keyStates[key])) {
             this.velocity.add(this.getForwardVector().multiplyScalar(speedDelta));
         }
+        // Move backward.
         if ((_b = this.keyOptions.backward) === null || _b === void 0 ? void 0 : _b.some(key => keyStates[key])) {
             this.velocity.add(this.getForwardVector().multiplyScalar(-speedDelta));
         }
+        // Turn left.
         if ((_c = this.keyOptions.leftTurn) === null || _c === void 0 ? void 0 : _c.some(key => keyStates[key])) {
             this.object.rotateY(delta * this.rotateSpeed);
         }
+        // Turn right.
         if ((_d = this.keyOptions.rightTurn) === null || _d === void 0 ? void 0 : _d.some(key => keyStates[key])) {
             this.object.rotateY(delta * -this.rotateSpeed);
         }
+        // Jump if grounded.
         if (this.isGrounded && ((_e = this.keyOptions.jump) === null || _e === void 0 ? void 0 : _e.some(key => keyStates[key]))) {
             this.velocity.y = this.jumpForce;
         }
     }
+    /**
+     * Updates the camera's position and orientation based on the object's transformation.
+     */
     updateCamera() {
-        if (this.camera && this.cameraPosOffset && this.cameraLookAtOffset) {
-            this.object.updateMatrixWorld();
-            const worldOffset = this.cameraPosOffset
-                .clone()
-                .applyMatrix4(this.object.matrixWorld);
-            this.camera.position.copy(worldOffset);
-            this.camera.lookAt(this.object
-                .getWorldPosition(this._vector1)
-                .add(this.cameraLookAtOffset));
-        }
+        if (!this.camera || !this.cameraPosOffset || !this.cameraLookAtOffset)
+            return;
+        this.object.updateMatrixWorld();
+        const worldOffset = this.cameraPosOffset.clone().applyMatrix4(this.object.matrixWorld);
+        this.camera.position.copy(worldOffset);
+        this.camera.lookAt(this.object.getWorldPosition(this._tempVector).add(this.cameraLookAtOffset));
     }
+    /**
+     * Updates the character's animations based on the current state and velocity.
+     * @param delta - The time delta for animation blending.
+     */
     updateAnimation(delta) {
         this._characters.update(delta);
         this.object.getWorldDirection(this._direction);
@@ -678,59 +798,340 @@ class KeyboardRotationControls extends PhysicsControls {
             this._characters.fadeToAction('fall', this.transitionTime);
         }
     }
+    /**
+     * Main update function that integrates controls, physics, camera, and animations.
+     * @param delta - The time delta for consistent updates.
+     */
     update(delta) {
         this.updateControls(delta);
         super.update(delta);
         this.updateCamera();
         this.updateAnimation(delta);
     }
+    /**
+     * Connects the keyboard controls by adding event listeners.
+     */
     connect() {
         super.connect();
-        document.addEventListener('keydown', this._onKeyDown);
-        document.addEventListener('keyup', this._onKeyUp);
+        document.addEventListener('keydown', this.onKeyDownHandler);
+        document.addEventListener('keyup', this.onKeyUpHandler);
     }
+    /**
+     * Disconnects the keyboard controls by removing event listeners.
+     */
     disconnect() {
         super.disconnect();
-        document.removeEventListener('keydown', this._onKeyDown);
-        document.removeEventListener('keyup', this._onKeyUp);
+        document.removeEventListener('keydown', this.onKeyDownHandler);
+        document.removeEventListener('keyup', this.onKeyUpHandler);
+    }
+    /**
+     * Disposes of the keyboard controls, cleaning up event listeners and animations.
+     */
+    dispose() {
+        this.disconnect();
+        super.dispose();
+        this._characters.dispose();
+    }
+    /**
+     * Handles keydown events, updating the key state.
+     * @param event - The keyboard event.
+     */
+    onKeyDown(event) {
+        keyStates[event.key] = true;
+    }
+    /**
+     * Handles keyup events, updating the key state.
+     * @param event - The keyboard event.
+     */
+    onKeyUp(event) {
+        keyStates[event.key] = false;
     }
 }
-function onKeyDown(event) {
-    keyStates[event.key] = true;
-}
-function onKeyUp(event) {
-    keyStates[event.key] = false;
+
+/**
+ * Controls class that allows movement with the keyboard and rotation with the mouse.
+ */
+class MouseRotationControls extends PhysicsControls {
+    /**
+     * Constructs a new MouseRotationControls instance.
+     * @param object - The 3D object to control.
+     * @param domElement - The HTML element to attach event listeners to.
+     * @param worldObject - The world object used for collision detection.
+     * @param keyOptions - Key mappings for actions.
+     * @param cameraOptions - Configuration options for the camera.
+     * @param animationOptions - Animation clips and options.
+     * @param physicsOptions - Physics options.
+     */
+    constructor(object, domElement, worldObject, keyOptions, cameraOptions, animationOptions = {}, physicsOptions = {}) {
+        super(object, domElement, worldObject, physicsOptions);
+        this._cameraRadius = 0;
+        this._cameraPhi = 0;
+        this._cameraTheta = 0;
+        this.keyStates = {};
+        this._isMouseDown = false;
+        // Temporary vectors for calculations
+        this._tempVector1 = new three.Vector3();
+        this._tempVector2 = new three.Vector3();
+        this._tempVector3 = new three.Vector3();
+        /** Handles keydown events to update key states. */
+        this.onKeyDown = (event) => {
+            this.keyStates[event.key] = true;
+        };
+        /** Handles keyup events to update key states. */
+        this.onKeyUp = (event) => {
+            this.keyStates[event.key] = false;
+        };
+        /** Handles mousedown events to set _isMouseDown flag. */
+        this.onMouseDown = () => {
+            this._isMouseDown = true;
+        };
+        /** Handles mouseup events to reset _isMouseDown flag. */
+        this.onMouseUp = () => {
+            this._isMouseDown = false;
+        };
+        /** Handles mousemove events to update camera angles when mouse is down. */
+        this.onMouseMove = (event) => {
+            if (!this._isMouseDown)
+                return;
+            this._cameraTheta += (event.movementX * this.rotateSpeed) / 100;
+            this._cameraPhi -= (event.movementY * this.rotateSpeed) / 100;
+            // Clamp the camera angles to prevent flipping
+            this._cameraPhi = Math.max(0.01, Math.min(Math.PI - 0.01, this._cameraPhi));
+        };
+        // Initialize character animations
+        const { idle, forward, jump, fall } = animationOptions || {};
+        this._characters = new Characters(object, Object.assign(Object.assign(Object.assign(Object.assign({}, (idle && { idle })), (forward && { forward })), (jump && { jump })), (fall && { fall })));
+        this.keyOptions = keyOptions;
+        this.camera = cameraOptions.camera;
+        this._cameraPositionOffset = cameraOptions.posOffset;
+        this._cameraLookAtOffset = cameraOptions.lookAtOffset;
+        this.updateCameraInfo();
+        // Set physics options with default values
+        const { jumpForce = 15, groundMoveSpeed = 25, floatMoveSpeed = 8, rotateSpeed = 1 } = physicsOptions;
+        this.jumpForce = jumpForce;
+        this.groundMoveSpeed = groundMoveSpeed;
+        this.floatMoveSpeed = floatMoveSpeed;
+        this.rotateSpeed = rotateSpeed;
+        // Set animation options with default values
+        const { transitionTime = 0.3, fallSpeedThreshold = 15, moveSpeedThreshold = 1 } = animationOptions;
+        this.transitionTime = transitionTime;
+        this.fallSpeedThreshold = fallSpeedThreshold;
+        this.moveSpeedThreshold = moveSpeedThreshold;
+        // Connect event listeners
+        this.connect();
+    }
+    get cameraPosOffset() {
+        return this._cameraPositionOffset;
+    }
+    set cameraPosOffset(offset) {
+        this._cameraPositionOffset = offset;
+        this.updateCameraInfo();
+    }
+    get cameraLookAtOffset() {
+        return this._cameraLookAtOffset;
+    }
+    set cameraLookAtOffset(offset) {
+        this._cameraLookAtOffset = offset;
+        this.updateCameraInfo();
+    }
+    /**
+     * Updates the camera's spherical coordinates based on the current offsets.
+     */
+    updateCameraInfo() {
+        const subVector = this._tempVector1.copy(this._cameraPositionOffset).sub(this._cameraLookAtOffset);
+        this._cameraRadius = subVector.length();
+        this._cameraPhi = Math.acos(subVector.y / this._cameraRadius);
+        this._cameraTheta = Math.atan2(subVector.z, subVector.x);
+    }
+    /**
+     * Gets the forward direction vector based on the camera's orientation.
+     * @returns Normalized forward vector.
+     */
+    getForwardVector() {
+        this.camera.getWorldDirection(this._tempVector1);
+        this._tempVector1.y = 0;
+        this._tempVector1.normalize();
+        return this._tempVector1;
+    }
+    /**
+     * Gets the side (right) direction vector based on the camera's orientation.
+     * @returns Normalized side vector.
+     */
+    getSideVector() {
+        this.camera.getWorldDirection(this._tempVector2);
+        this._tempVector2.y = 0;
+        this._tempVector2.normalize();
+        this._tempVector2.cross(this.object.up);
+        return this._tempVector2;
+    }
+    /**
+     * Updates the object's velocity based on keyboard input.
+     * @param delta - Time delta for frame-independent movement.
+     */
+    updateControls(delta) {
+        var _a, _b, _c, _d, _e;
+        // Handle jumping
+        if (this.isGrounded && ((_a = this.keyOptions.jump) === null || _a === void 0 ? void 0 : _a.some(key => this.keyStates[key]))) {
+            this.velocity.y = this.jumpForce;
+        }
+        const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        // Reset movement vector
+        const movement = this._tempVector3.set(0, 0, 0);
+        // Accumulate movement vectors based on key states
+        if ((_b = this.keyOptions.leftward) === null || _b === void 0 ? void 0 : _b.some(key => this.keyStates[key])) {
+            movement.add(this.getSideVector().multiplyScalar(-1));
+        }
+        if ((_c = this.keyOptions.rightward) === null || _c === void 0 ? void 0 : _c.some(key => this.keyStates[key])) {
+            movement.add(this.getSideVector());
+        }
+        if ((_d = this.keyOptions.backward) === null || _d === void 0 ? void 0 : _d.some(key => this.keyStates[key])) {
+            movement.add(this.getForwardVector().multiplyScalar(-1));
+        }
+        if ((_e = this.keyOptions.forward) === null || _e === void 0 ? void 0 : _e.some(key => this.keyStates[key])) {
+            movement.add(this.getForwardVector());
+        }
+        // Apply movement if any
+        if (movement.lengthSq() > 1e-10) {
+            movement.normalize();
+            this.velocity.add(movement.multiplyScalar(speedDelta));
+            this.object.lookAt(this.object.position.clone().add(movement));
+        }
+    }
+    /**
+     * Updates the camera's position and orientation based on the object's position and mouse input.
+     */
+    updateCamera() {
+        this.object.updateMatrixWorld();
+        const x = this._cameraRadius * Math.sin(this._cameraPhi) * Math.cos(this._cameraTheta);
+        const y = this._cameraRadius * Math.cos(this._cameraPhi);
+        const z = this._cameraRadius * Math.sin(this._cameraPhi) * Math.sin(this._cameraTheta);
+        const worldOffset = this._tempVector1.copy(this._cameraLookAtOffset).applyMatrix4(this.object.matrixWorld);
+        const cameraPosition = this._tempVector2.set(x, y, z).add(worldOffset);
+        this.camera.position.copy(cameraPosition);
+        const lookAtPosition = this._tempVector3.copy(this.object.position).add(this._cameraLookAtOffset);
+        this.camera.lookAt(lookAtPosition);
+    }
+    /**
+     * Updates the character's animations based on the current state and velocity.
+     * @param delta - Time delta for animation updates.
+     */
+    updateAnimation(delta) {
+        this._characters.update(delta);
+        this.object.getWorldDirection(this._tempVector1);
+        const horizontalSpeed = this._tempVector1.copy(this.velocity);
+        horizontalSpeed.y = 0;
+        const speed = horizontalSpeed.length();
+        // Determine which animation to play based on state and speed
+        if (this.isGrounded && speed > this.moveSpeedThreshold) {
+            this._characters.fadeToAction('forward', this.transitionTime);
+        }
+        else if (this.isGrounded) {
+            this._characters.fadeToAction('idle', this.transitionTime);
+        }
+        else if (this.velocity.y > 0) {
+            this._characters.fadeToAction('jump', this.transitionTime);
+        }
+        else if (this.velocity.y < -this.fallSpeedThreshold) {
+            this._characters.fadeToAction('fall', this.transitionTime);
+        }
+    }
+    /**
+     * Main update function that integrates controls, physics, camera, and animations.
+     * @param delta - Time delta for consistent updates.
+     */
+    update(delta) {
+        this.updateControls(delta);
+        super.update(delta);
+        this.updateCamera();
+        this.updateAnimation(delta);
+    }
+    /**
+     * Connects the controls by adding event listeners.
+     */
+    connect() {
+        var _a, _b;
+        super.connect();
+        document.addEventListener('keydown', this.onKeyDown);
+        document.addEventListener('keyup', this.onKeyUp);
+        (_a = this.domElement) === null || _a === void 0 ? void 0 : _a.addEventListener('mousedown', this.onMouseDown);
+        document.addEventListener('mouseup', this.onMouseUp);
+        (_b = this.domElement) === null || _b === void 0 ? void 0 : _b.addEventListener('mousemove', this.onMouseMove);
+    }
+    /**
+     * Disconnects the controls by removing event listeners.
+     */
+    disconnect() {
+        var _a, _b;
+        super.disconnect();
+        document.removeEventListener('keydown', this.onKeyDown);
+        document.removeEventListener('keyup', this.onKeyUp);
+        (_a = this.domElement) === null || _a === void 0 ? void 0 : _a.removeEventListener('mousedown', this.onMouseDown);
+        document.removeEventListener('mouseup', this.onMouseUp);
+        (_b = this.domElement) === null || _b === void 0 ? void 0 : _b.removeEventListener('mousemove', this.onMouseMove);
+    }
+    dispose() {
+        this.disconnect();
+        super.dispose();
+        this._characters.dispose();
+    }
 }
 
+/**
+ * Helper class for visualizing the PhysicsControls' collider and boundaries.
+ */
 class PhysicsControlsHelper extends three.Group {
+    /**
+     * Constructs a new PhysicsControlsHelper.
+     * @param controls - The PhysicsControls instance to visualize.
+     * @param color - The color for the helper visualization.
+     */
     constructor(controls, color = 0xffffff) {
         super();
         this.type = 'PhysicsControlsHelper';
-        this._position = new three.Vector3();
-        const capsuleGeometry = new three.CapsuleGeometry(controls.radius, controls.height - 2 * controls.radius);
+        this._capsulePosition = new three.Vector3();
+        this.controls = controls;
+        // Create capsule geometry to visualize the collider.
+        const capsuleGeometry = new three.CapsuleGeometry(controls.collider.radius, controls.collider.height - 2 * controls.collider.radius);
         this.capsuleHelper = new three.LineSegments(capsuleGeometry, new three.LineBasicMaterial({ color: color, toneMapped: false }));
         this.add(this.capsuleHelper);
+        // Create box geometry to visualize the boundary if it is set.
         if (controls.boundary) {
-            const width = controls.boundary.x[1] - controls.boundary.x[0];
-            const height = controls.boundary.y[1] - controls.boundary.y[0];
-            const depth = controls.boundary.z[1] - controls.boundary.z[0];
-            const boxGeometry = new three.BoxGeometry(width, height, depth, width, height, depth);
+            const width = controls.boundary.x.max - controls.boundary.x.min;
+            const height = controls.boundary.y.max - controls.boundary.y.min;
+            const depth = controls.boundary.z.max - controls.boundary.z.min;
+            const boxGeometry = new three.BoxGeometry(width, height, depth);
             this.boundaryHelper = new three.LineSegments(boxGeometry, new three.LineBasicMaterial({ color: color, toneMapped: false }));
+            this.boundaryHelper.position.set(controls.boundary.x.min + width / 2, controls.boundary.y.min + height / 2, controls.boundary.z.min + depth / 2);
             this.add(this.boundaryHelper);
         }
-        this.controls = controls;
         this.matrixAutoUpdate = false;
         this.update();
     }
+    /**
+     * Updates the position and rotation of the helper to match the controls' object.
+     */
     update() {
         this.controls.object.updateMatrixWorld(true);
-        this._position.copy(this.controls.object.position);
-        this._position.y += this.controls.height / 2;
-        this.capsuleHelper.position.copy(this._position);
+        this._capsulePosition.copy(this.controls.object.position);
+        this._capsulePosition.y += this.controls.collider.height / 2;
+        this.capsuleHelper.position.copy(this._capsulePosition);
         this.capsuleHelper.rotation.copy(this.controls.object.rotation);
         this.updateMatrix();
+    }
+    /**
+     * Disposes of the helper's geometry and material.
+     */
+    dispose() {
+        this.capsuleHelper.geometry.dispose();
+        this.capsuleHelper.material.dispose();
+        if (this.boundaryHelper) {
+            this.boundaryHelper.geometry.dispose();
+            this.capsuleHelper.material.dispose();
+        }
+        this.clear();
     }
 }
 
 exports.KeyboardRotationControls = KeyboardRotationControls;
+exports.MouseRotationControls = MouseRotationControls;
 exports.PhysicsControlsHelper = PhysicsControlsHelper;
