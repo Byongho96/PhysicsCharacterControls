@@ -16,7 +16,7 @@
     <script type="importmap">
       {
         "imports": {
-          "physics-character-controls": "/dist/bundle.esm.js",
+          "physics-character-controls": "../../dist/bundle.esm.js",
           "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
           "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
         }
@@ -47,13 +47,13 @@
       let helpers;
 
       Promise.all([
-        gltfLoader.loadAsync('/public/assets/models/collision-world.glb'),
-        gltfLoader.loadAsync('/public/assets/models/x_bot.glb'),
-        gltfLoader.loadAsync('/public/assets/animations/idle.glb'),
-        gltfLoader.loadAsync('/public/assets/animations/running.glb'),
-        gltfLoader.loadAsync('/public/assets/animations/running_backwards.glb'),
-        gltfLoader.loadAsync('/public/assets/animations/jumping.glb'),
-        gltfLoader.loadAsync('/public/assets/animations/falling.glb'),
+        gltfLoader.loadAsync('../assets/models/collision-world.glb'),
+        gltfLoader.loadAsync('../assets/models/x_bot.glb'),
+        gltfLoader.loadAsync('../assets/animations/idle.glb'),
+        gltfLoader.loadAsync('../assets/animations/running.glb'),
+        gltfLoader.loadAsync('../assets/animations/running_backwards.glb'),
+        gltfLoader.loadAsync('../assets/animations/jumping.glb'),
+        gltfLoader.loadAsync('../assets/animations/falling.glb'),
       ]).then(([world, character, idle, walking, walkingBackwards, jumping, falling]) => {
         scene.add(world.scene);
         world.scene.traverse(child => {
