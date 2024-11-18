@@ -55,10 +55,10 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
 const keyStates: Record<string, boolean> = {};
 
 /**
- * KeyboardRotationControls class allows controlling an object using keyboard input,
+ * KeyboardObjectRotationControls class allows controlling an object using keyboard input,
  * including movement, rotation, physics simulation, camera control, and animations.
  */
-class KeyboardRotationControls extends PhysicsControls {
+class KeyboardObjectRotationControls extends PhysicsControls {
   /** Character animations handler. */
   private _characters: Characters;
 
@@ -87,7 +87,7 @@ class KeyboardRotationControls extends PhysicsControls {
   private onKeyUpHandler: (event: KeyboardEvent) => void;
 
   /**
-   * Constructs a new KeyboardRotationControls instance.
+   * Constructs a new KeyboardObjectRotationControls instance.
    * @param object - The 3D object to control.
    * @param domElement - The HTML element for event listeners (optional).
    * @param worldObject - The world object used for physics collision.
@@ -288,4 +288,4 @@ class KeyboardRotationControls extends PhysicsControls {
   }
 }
 
-export { KeyboardRotationControls };
+export { KeyboardObjectRotationControls };

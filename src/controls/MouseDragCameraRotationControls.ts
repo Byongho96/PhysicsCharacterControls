@@ -36,9 +36,9 @@ export type CameraOptions = {
 };
 
 /**
- * Extended physics options specific to keyboard controls.
+ * Extended physics options specific to mouse drag controls.
  */
-export type KeyboardPhysicsOptions = PhysicsOptions & {
+export type MouseDragPhysicsOptions = PhysicsOptions & {
   jumpForce?: number;
   groundMoveSpeed?: number;
   floatMoveSpeed?: number;
@@ -48,7 +48,7 @@ export type KeyboardPhysicsOptions = PhysicsOptions & {
 /**
  * Controls class that allows movement with the keyboard and rotation with the mouse.
  */
-class MouseRotationControls extends PhysicsControls {
+class MouseDragCameraRotationControls extends PhysicsControls {
   private _characters: Characters;
 
   // Camera options
@@ -81,7 +81,7 @@ class MouseRotationControls extends PhysicsControls {
   private _tempVector3: Vector3 = new Vector3();
 
   /**
-   * Constructs a new MouseRotationControls instance.
+   * Constructs a new MouseDragCameraRotationControls instance.
    * @param object - The 3D object to control.
    * @param domElement - The HTML element to attach event listeners to.
    * @param worldObject - The world object used for collision detection.
@@ -97,7 +97,7 @@ class MouseRotationControls extends PhysicsControls {
     keyOptions: KeyOptions,
     cameraOptions: CameraOptions,
     animationOptions: AnimationOptions = {},
-    physicsOptions: KeyboardPhysicsOptions = {},
+    physicsOptions: MouseDragPhysicsOptions = {},
   ) {
     super(object, domElement, worldObject, physicsOptions);
 
@@ -345,4 +345,4 @@ class MouseRotationControls extends PhysicsControls {
   };
 }
 
-export { MouseRotationControls };
+export { MouseDragCameraRotationControls };

@@ -9,7 +9,7 @@
   <body>
     <div id="info">
       Physics character controls demo <br />
-      WASD to move, Drag mouse to rotate and SPACE to jump
+      WASD to move and SPACE to jump
     </div>
     <div id="container"></div>
 
@@ -30,7 +30,7 @@
 
       import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-      import { MouseRotationControls } from 'physics-character-controls';
+      import { KeyboardObjectRotationControls } from 'physics-character-controls';
       import { PhysicsControlsHelper } from 'physics-character-controls';
 
       const STEPS_PER_FRAME = 5;
@@ -51,9 +51,10 @@
         gltfLoader.loadAsync('../assets/models/x_bot.glb'),
         gltfLoader.loadAsync('../assets/animations/idle.glb'),
         gltfLoader.loadAsync('../assets/animations/running.glb'),
+        gltfLoader.loadAsync('../assets/animations/running_backwards.glb'),
         gltfLoader.loadAsync('../assets/animations/jumping.glb'),
         gltfLoader.loadAsync('../assets/animations/falling.glb'),
-      ]).then(([world, character, idle, walking, jumping, falling]) => {
+      ]).then(([world, character, idle, walking, walkingBackwards, jumping, falling]) => {
         scene.add(world.scene);
         world.scene.traverse(child => {
           if (child.isMesh) {
@@ -72,15 +73,15 @@
           }
         });
 
-        controls = new MouseRotationControls(
+        controls = new KeyboardObjectRotationControls(
           character.scene,
           renderer.domElement,
           world.scene,
           {
             forward: ['ArrowUp', 'w'],
             backward: ['ArrowDown', 's'],
-            leftward: ['ArrowLeft', 'a'],
-            rightward: ['ArrowRight', 'd'],
+            leftTurn: ['ArrowLeft', 'a'],
+            rightTurn: ['ArrowRight', 'd'],
             jump: [' '],
           },
           {
@@ -91,6 +92,7 @@
           {
             idle: idle.animations[0],
             forward: walking.animations[0],
+            backward: walkingBackwards.animations[0],
             jump: jumping.animations[0],
             fall: falling.animations[0],
           },
@@ -125,7 +127,7 @@
         const folder2 = gui.addFolder('Physics');
         folder2.add(controls, 'groundMoveSpeed', 0, 40).name('ground move speed').listen();
         folder2.add(controls, 'floatMoveSpeed', 0, 20).name('float move speed').listen();
-        folder2.add(controls, 'rotateSpeed', 0, 2).name('rotate speed').listen();
+        folder2.add(controls, 'rotateSpeed', 0, 10).name('rotate speed').listen();
         folder2.add(controls, 'jumpForce', 0, 30).name('jump force').listen();
         folder2.add(controls, 'gravity', 0, 50).name('gravity').listen();
         folder2.add(controls, 'maxFallSpeed', 0, 40).name('max fall speed').listen();
