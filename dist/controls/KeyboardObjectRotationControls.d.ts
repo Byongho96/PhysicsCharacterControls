@@ -42,10 +42,10 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
     rotateSpeed?: number;
 };
 /**
- * KeyboardRotationControls class allows controlling an object using keyboard input,
+ * KeyboardObjectRotationControls class allows controlling an object using keyboard input,
  * including movement, rotation, physics simulation, camera control, and animations.
  */
-declare class KeyboardRotationControls extends PhysicsControls {
+declare class KeyboardObjectRotationControls extends PhysicsControls {
     /** Character animations handler. */
     private _characters;
     camera: Camera | null;
@@ -64,7 +64,7 @@ declare class KeyboardRotationControls extends PhysicsControls {
     private onKeyDownHandler;
     private onKeyUpHandler;
     /**
-     * Constructs a new KeyboardRotationControls instance.
+     * Constructs a new KeyboardObjectRotationControls instance.
      * @param object - The 3D object to control.
      * @param domElement - The HTML element for event listeners (optional).
      * @param worldObject - The world object used for physics collision.
@@ -121,4 +121,4 @@ declare class KeyboardRotationControls extends PhysicsControls {
      */
     private onKeyUp;
 }
-export { KeyboardRotationControls };
+export { KeyboardObjectRotationControls };

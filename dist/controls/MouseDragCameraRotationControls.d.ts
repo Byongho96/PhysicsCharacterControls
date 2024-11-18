@@ -29,9 +29,9 @@ export type CameraOptions = {
     lookAtOffset: Vector3;
 };
 /**
- * Extended physics options specific to keyboard controls.
+ * Extended physics options specific to mouse drag controls.
  */
-export type KeyboardPhysicsOptions = PhysicsOptions & {
+export type MouseDragPhysicsOptions = PhysicsOptions & {
     jumpForce?: number;
     groundMoveSpeed?: number;
     floatMoveSpeed?: number;
@@ -40,7 +40,7 @@ export type KeyboardPhysicsOptions = PhysicsOptions & {
 /**
  * Controls class that allows movement with the keyboard and rotation with the mouse.
  */
-declare class MouseRotationControls extends PhysicsControls {
+declare class MouseDragCameraRotationControls extends PhysicsControls {
     private _characters;
     camera: Camera;
     private _cameraPositionOffset;
@@ -62,7 +62,7 @@ declare class MouseRotationControls extends PhysicsControls {
     private _tempVector2;
     private _tempVector3;
     /**
-     * Constructs a new MouseRotationControls instance.
+     * Constructs a new MouseDragCameraRotationControls instance.
      * @param object - The 3D object to control.
      * @param domElement - The HTML element to attach event listeners to.
      * @param worldObject - The world object used for collision detection.
@@ -71,7 +71,7 @@ declare class MouseRotationControls extends PhysicsControls {
      * @param animationOptions - Animation clips and options.
      * @param physicsOptions - Physics options.
      */
-    constructor(object: Object3D, domElement: HTMLElement | null, worldObject: Object3D, keyOptions: KeyOptions, cameraOptions: CameraOptions, animationOptions?: AnimationOptions, physicsOptions?: KeyboardPhysicsOptions);
+    constructor(object: Object3D, domElement: HTMLElement | null, worldObject: Object3D, keyOptions: KeyOptions, cameraOptions: CameraOptions, animationOptions?: AnimationOptions, physicsOptions?: MouseDragPhysicsOptions);
     get cameraPosOffset(): Vector3;
     set cameraPosOffset(offset: Vector3);
     get cameraLookAtOffset(): Vector3;
@@ -129,4 +129,4 @@ declare class MouseRotationControls extends PhysicsControls {
     /** Handles mousemove events to update camera angles when mouse is down. */
     private onMouseMove;
 }
-export { MouseRotationControls };
+export { MouseDragCameraRotationControls };

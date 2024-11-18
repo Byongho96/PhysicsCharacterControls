@@ -1,3 +1,3 @@
-export * from './controls/KeyboardRotationControls';
-export * from './controls/MouseRotationControls';
+export * from './controls/KeyboardObjectRotationControls';
+export * from './controls/MouseDragCameraRotationControls';
 export * from './helpers/PhysicsControlsHelper';

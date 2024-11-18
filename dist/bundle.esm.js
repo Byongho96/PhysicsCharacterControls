@@ -673,12 +673,12 @@ class Characters {
  */
 const keyStates = {};
 /**
- * KeyboardRotationControls class allows controlling an object using keyboard input,
+ * KeyboardObjectRotationControls class allows controlling an object using keyboard input,
  * including movement, rotation, physics simulation, camera control, and animations.
  */
-class KeyboardRotationControls extends PhysicsControls {
+class KeyboardObjectRotationControls extends PhysicsControls {
     /**
-     * Constructs a new KeyboardRotationControls instance.
+     * Constructs a new KeyboardObjectRotationControls instance.
      * @param object - The 3D object to control.
      * @param domElement - The HTML element for event listeners (optional).
      * @param worldObject - The world object used for physics collision.
@@ -847,9 +847,9 @@ class KeyboardRotationControls extends PhysicsControls {
 /**
  * Controls class that allows movement with the keyboard and rotation with the mouse.
  */
-class MouseRotationControls extends PhysicsControls {
+class MouseDragCameraRotationControls extends PhysicsControls {
     /**
-     * Constructs a new MouseRotationControls instance.
+     * Constructs a new MouseDragCameraRotationControls instance.
      * @param object - The 3D object to control.
      * @param domElement - The HTML element to attach event listeners to.
      * @param worldObject - The world object used for collision detection.
@@ -1128,4 +1128,4 @@ class PhysicsControlsHelper extends Group {
     }
 }
 
-export { KeyboardRotationControls, MouseRotationControls, PhysicsControlsHelper };
+export { KeyboardObjectRotationControls, MouseDragCameraRotationControls, PhysicsControlsHelper };
