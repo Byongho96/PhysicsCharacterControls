@@ -222,7 +222,10 @@ class KeyboardObjectRotationControls extends PhysicsControls {
     } else if (this.isGrounded) {
       this._characters.fadeToAction('idle', this.transitionTime);
     } else if (this.velocity.y > 0) {
-      this._characters.fadeToAction('jump', this.transitionTime);
+      const jumpKeyPressed = !!this.keyOptions.jump?.some(key => keyStates[key]);
+      if (jumpKeyPressed) {
+        this._characters.fadeToAction('jump', this.transitionTime);
+      }
     } else if (this.velocity.y < -this.fallSpeedThreshold) {
       this._characters.fadeToAction('fall', this.transitionTime);
     }
