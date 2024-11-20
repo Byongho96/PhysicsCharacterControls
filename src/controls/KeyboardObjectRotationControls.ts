@@ -215,16 +215,17 @@ class KeyboardObjectRotationControls extends PhysicsControls {
     this.object.getWorldDirection(this._direction);
     const forwardSpeed = this._direction.dot(this.velocity);
 
-    const jumpKeyPressed = !!this.keyOptions.jump?.some(key => keyStates[key]);
-
     if (this.isGrounded && forwardSpeed > this.moveSpeedThreshold) {
       this._characters.fadeToAction('forward', this.transitionTime);
     } else if (this.isGrounded && forwardSpeed < -this.moveSpeedThreshold) {
       this._characters.fadeToAction('backward', this.transitionTime);
     } else if (this.isGrounded) {
       this._characters.fadeToAction('idle', this.transitionTime);
-    } else if (jumpKeyPressed && this.velocity.y > 0) {
-      this._characters.fadeToAction('jump', this.transitionTime);
+    } else if (this.velocity.y > 0) {
+      const jumpKeyPressed = !!this.keyOptions.jump?.some(key => keyStates[key]);
+      if (jumpKeyPressed) {
+        this._characters.fadeToAction('jump', this.transitionTime);
+      }
     } else if (this.velocity.y < -this.fallSpeedThreshold) {
       this._characters.fadeToAction('fall', this.transitionTime);
     }
