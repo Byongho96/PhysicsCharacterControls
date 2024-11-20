@@ -775,6 +775,7 @@ class KeyboardObjectRotationControls extends PhysicsControls {
      * @param delta - The time delta for animation blending.
      */
     updateAnimation(delta) {
+        var _a;
         this._characters.update(delta);
         this.object.getWorldDirection(this._direction);
         const forwardSpeed = this._direction.dot(this.velocity);
@@ -788,7 +789,10 @@ class KeyboardObjectRotationControls extends PhysicsControls {
             this._characters.fadeToAction('idle', this.transitionTime);
         }
         else if (this.velocity.y > 0) {
-            this._characters.fadeToAction('jump', this.transitionTime);
+            const jumpKeyPressed = !!((_a = this.keyOptions.jump) === null || _a === void 0 ? void 0 : _a.some(key => keyStates[key]));
+            if (jumpKeyPressed) {
+                this._characters.fadeToAction('jump', this.transitionTime);
+            }
         }
         else if (this.velocity.y < -this.fallSpeedThreshold) {
             this._characters.fadeToAction('fall', this.transitionTime);
