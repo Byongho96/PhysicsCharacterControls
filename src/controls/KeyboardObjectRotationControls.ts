@@ -1,6 +1,5 @@
-import { AnimationClip, Camera, Object3D, Vector3 } from 'three';
+import { Object3D, Vector3 } from 'three';
 import { PhysicsControls, PhysicsOptions } from './base/PhysicsControls';
-import { Characters } from '../characters/Characters';
 
 /**
  * Actions that can be performed via keyboard input.
@@ -8,41 +7,17 @@ import { Characters } from '../characters/Characters';
 type Actions = 'forward' | 'backward' | 'leftTurn' | 'rightTurn' | 'jump';
 
 /**
- * Possible animations corresponding to actions or states.
- */
-type Animations = 'idle' | 'forward' | 'backward' | 'jump' | 'fall';
-
-/**
  * Configuration for key mappings to actions.
  */
-type KeyOptions = {
+type ActionKeys = {
   [K in Actions]?: string[]; // Mapping each action to possible key bindings
-};
-
-/**
- * Configuration for animation clips and related options.
- */
-type AnimationOptions = {
-  [K in Animations]?: AnimationClip; // Mapping each animation to a corresponding clip
-} & {
-  transitionTime?: number; // Time between animation transitions
-  fallSpeedThreshold?: number; // Speed threshold to trigger falling animation
-  moveSpeedThreshold?: number; // Speed threshold to differentiate idle and movement animations
-};
-
-/**
- * Configuration for camera positioning relative to the player.
- */
-type CameraOptions = {
-  camera: Camera; // Camera to control
-  posOffset: Vector3; // Offset for camera position relative to the player
-  lookAtOffset: Vector3; // Offset for the camera's lookAt position
 };
 
 /**
  * Extended physics options specific to keyboard controls.
  */
 type KeyboardPhysicsOptions = PhysicsOptions & {
+  eyeHeight?: number;
   jumpForce?: number; // Force applied when jumping
   groundMoveSpeed?: number; // Speed when moving on the ground
   floatMoveSpeed?: number; // Speed when in the air
@@ -52,46 +27,41 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
 /**
  * Global object to track the current state of pressed keys.
  */
-const keyStates: Record<string, boolean> = {};
+const keyStates: Record<Actions, boolean> = {
+  forward: false,
+  backward: false,
+  leftTurn: false,
+  rightTurn: false,
+  jump: false,
+};
 
 /**
- * KeyboardObjectRotationControls class allows controlling an object using keyboard input,
- * including movement, rotation, physics simulation, camera control, and animations.
+ * KeyboardObjectRotationControls class allows controlling a 3D object using the keyboard,
  */
 class KeyboardObjectRotationControls extends PhysicsControls {
-  /** Character animations handler. */
-  private _characters: Characters;
-
-  camera: Camera | null = null;
-  cameraPosOffset: Vector3 | null = null;
-  cameraLookAtOffset: Vector3 | null = null;
-
-  keyOptions: KeyOptions;
+  // Character animations
+  actionKeys: ActionKeys;
 
   // Physics options
+  eyeHeight: number;
   jumpForce: number;
   groundMoveSpeed: number;
   floatMoveSpeed: number;
   rotateSpeed: number;
 
-  // Animation options
-  transitionTime: number;
-  fallSpeedThreshold: number;
-  moveSpeedThreshold: number;
-
-  private _tempVector: Vector3 = new Vector3(); // Temporary vector for calculations
-  private _direction: Vector3 = new Vector3();
+  // Temporary vectors for calculations
+  private _objectWorldDirection: Vector3 = new Vector3();
 
   // Handlers for keyboard events.
   private onKeyDownHandler: (event: KeyboardEvent) => void;
   private onKeyUpHandler: (event: KeyboardEvent) => void;
 
   /**
-   * Constructs a new KeyboardObjectRotationControls instance.
+   * Constructs a new KeyboardObjectRotationControls  instance.
    * @param object - The 3D object to control.
    * @param domElement - The HTML element for event listeners (optional).
    * @param worldObject - The world object used for physics collision.
-   * @param keyOptions - Key mappings for actions.
+   * @param actionKeys - Key mappings for actions.
    * @param cameraOptions - Configuration for the camera (optional).
    * @param animationOptions - Configuration for animations (optional).
    * @param physicsOptions - Physics configuration options (optional).
@@ -100,43 +70,24 @@ class KeyboardObjectRotationControls extends PhysicsControls {
     object: Object3D,
     domElement: HTMLElement | null,
     worldObject: Object3D,
-    keyOptions: KeyOptions,
-    cameraOptions?: CameraOptions,
-    animationOptions?: AnimationOptions,
+    actionKeys: ActionKeys,
     physicsOptions?: KeyboardPhysicsOptions,
   ) {
-    super(object, domElement, worldObject, physicsOptions);
-
-    // Initialize character animations.
-    const { idle, forward, backward, jump, fall } = animationOptions || {};
-    this._characters = new Characters(object, {
-      ...(idle && { idle }),
-      ...(forward && { forward }),
-      ...(backward && { backward }),
-      ...(jump && { jump }),
-      ...(fall && { fall }),
+    super(object, domElement, worldObject, {
+      colliderHeight: 1.6,
+      colliderRadius: 0.5,
+      ...physicsOptions,
     });
 
     // Set key mappings.
-    this.keyOptions = keyOptions;
-
-    // Initialize camera options if provided.
-    if (cameraOptions) {
-      this.camera = cameraOptions.camera;
-      this.cameraPosOffset = cameraOptions.posOffset.clone();
-      this.cameraLookAtOffset = cameraOptions.lookAtOffset.clone();
-    }
+    this.actionKeys = actionKeys;
 
     // Set physics parameters with defaults if not provided.
+    this.eyeHeight = physicsOptions?.eyeHeight ?? 1.5;
     this.jumpForce = physicsOptions?.jumpForce ?? 15;
     this.groundMoveSpeed = physicsOptions?.groundMoveSpeed ?? 25;
     this.floatMoveSpeed = physicsOptions?.floatMoveSpeed ?? 8;
     this.rotateSpeed = physicsOptions?.rotateSpeed ?? 1;
-
-    // Set animation options with defaults if not provided.
-    this.transitionTime = animationOptions?.transitionTime ?? 0.3;
-    this.fallSpeedThreshold = animationOptions?.fallSpeedThreshold ?? 15;
-    this.moveSpeedThreshold = animationOptions?.moveSpeedThreshold ?? 1;
 
     // Bind key event handlers.
     this.onKeyDownHandler = this.onKeyDown.bind(this);
@@ -147,15 +98,15 @@ class KeyboardObjectRotationControls extends PhysicsControls {
   }
 
   /**
-   * Retrieves the forward _direction vector of the object, ignoring the Y-axis.
-   * @returns A normalized Vector3 representing the forward _direction.
+   * Retrieves the forward _objectWorldDirection vector of the object, ignoring the Y-axis.
+   * @returns A normalized Vector3 representing the forward _objectWorldDirection.
    */
   private getForwardVector(): Vector3 {
-    this.object.getWorldDirection(this._direction);
-    this._direction.y = 0;
-    this._direction.normalize();
+    this.object.getWorldDirection(this._objectWorldDirection);
+    this._objectWorldDirection.y = 0;
+    this._objectWorldDirection.normalize();
 
-    return this._direction;
+    return this._objectWorldDirection;
   }
 
   /**
@@ -166,68 +117,28 @@ class KeyboardObjectRotationControls extends PhysicsControls {
     const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
 
     // Move forward.
-    if (this.keyOptions.forward?.some(key => keyStates[key])) {
+    if (keyStates.forward) {
       this.velocity.add(this.getForwardVector().multiplyScalar(speedDelta));
     }
 
     // Move backward.
-    if (this.keyOptions.backward?.some(key => keyStates[key])) {
+    if (keyStates.backward) {
       this.velocity.add(this.getForwardVector().multiplyScalar(-speedDelta));
     }
 
     // Turn left.
-    if (this.keyOptions.leftTurn?.some(key => keyStates[key])) {
+    if (keyStates.leftTurn) {
       this.object.rotateY(delta * this.rotateSpeed);
     }
 
     // Turn right.
-    if (this.keyOptions.rightTurn?.some(key => keyStates[key])) {
+    if (keyStates.rightTurn) {
       this.object.rotateY(delta * -this.rotateSpeed);
     }
 
     // Jump if grounded.
-    if (this.isGrounded && this.keyOptions.jump?.some(key => keyStates[key])) {
+    if (keyStates.jump && this.isGrounded) {
       this.velocity.y = this.jumpForce;
-    }
-  }
-
-  /**
-   * Updates the camera's position and orientation based on the object's transformation.
-   */
-  private updateCamera() {
-    if (!this.camera || !this.cameraPosOffset || !this.cameraLookAtOffset) return;
-
-    this.object.updateMatrixWorld();
-
-    const worldOffset = this.cameraPosOffset.clone().applyMatrix4(this.object.matrixWorld);
-    this.camera.position.copy(worldOffset);
-
-    this.camera.lookAt(this.object.getWorldPosition(this._tempVector).add(this.cameraLookAtOffset));
-  }
-
-  /**
-   * Updates the character's animations based on the current state and velocity.
-   * @param delta - The time delta for animation blending.
-   */
-  private updateAnimation(delta: number) {
-    this._characters.update(delta);
-
-    this.object.getWorldDirection(this._direction);
-    const forwardSpeed = this._direction.dot(this.velocity);
-
-    if (this.isGrounded && forwardSpeed > this.moveSpeedThreshold) {
-      this._characters.fadeToAction('forward', this.transitionTime);
-    } else if (this.isGrounded && forwardSpeed < -this.moveSpeedThreshold) {
-      this._characters.fadeToAction('backward', this.transitionTime);
-    } else if (this.isGrounded) {
-      this._characters.fadeToAction('idle', this.transitionTime);
-    } else if (this.velocity.y > 0) {
-      const jumpKeyPressed = !!this.keyOptions.jump?.some(key => keyStates[key]);
-      if (jumpKeyPressed) {
-        this._characters.fadeToAction('jump', this.transitionTime);
-      }
-    } else if (this.velocity.y < -this.fallSpeedThreshold) {
-      this._characters.fadeToAction('fall', this.transitionTime);
     }
   }
 
@@ -240,8 +151,7 @@ class KeyboardObjectRotationControls extends PhysicsControls {
 
     super.update(delta);
 
-    this.updateCamera();
-    this.updateAnimation(delta);
+    this.object.translateY(this.eyeHeight);
   }
 
   /**
@@ -271,7 +181,6 @@ class KeyboardObjectRotationControls extends PhysicsControls {
     this.disconnect();
 
     super.dispose();
-    this._characters.dispose();
   }
 
   /**
@@ -279,7 +188,25 @@ class KeyboardObjectRotationControls extends PhysicsControls {
    * @param event - The keyboard event.
    */
   private onKeyDown(event: KeyboardEvent) {
-    keyStates[event.key] = true;
+    if (this.actionKeys.forward?.some(key => event.key === key)) {
+      keyStates.forward = true;
+    }
+
+    if (this.actionKeys.backward?.some(key => event.key === key)) {
+      keyStates.backward = true;
+    }
+
+    if (this.actionKeys.leftTurn?.some(key => event.key === key)) {
+      keyStates.leftTurn = true;
+    }
+
+    if (this.actionKeys.rightTurn?.some(key => event.key === key)) {
+      keyStates.rightTurn = true;
+    }
+
+    if (this.actionKeys.jump?.some(key => event.key === key)) {
+      keyStates.jump = true;
+    }
   }
 
   /**
@@ -287,7 +214,25 @@ class KeyboardObjectRotationControls extends PhysicsControls {
    * @param event - The keyboard event.
    */
   private onKeyUp(event: KeyboardEvent) {
-    keyStates[event.key] = false;
+    if (this.actionKeys.forward?.some(key => event.key === key)) {
+      keyStates.forward = false;
+    }
+
+    if (this.actionKeys.backward?.some(key => event.key === key)) {
+      keyStates.backward = false;
+    }
+
+    if (this.actionKeys.leftTurn?.some(key => event.key === key)) {
+      keyStates.leftTurn = false;
+    }
+
+    if (this.actionKeys.rightTurn?.some(key => event.key === key)) {
+      keyStates.rightTurn = false;
+    }
+
+    if (this.actionKeys.jump?.some(key => event.key === key)) {
+      keyStates.jump = false;
+    }
   }
 }
 
