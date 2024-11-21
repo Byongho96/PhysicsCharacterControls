@@ -47,7 +47,7 @@ const keyStates: Record<Actions, boolean> = {
 /**
  * Controls class that allows movement with the keyboard and rotation with the mouse.
  */
-class MouseDragCameraRotationControls extends PhysicsCharacterControls {
+class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
   // Camera options
   camera: Camera;
   private _cameraPositionOffset: Vector3;
@@ -78,7 +78,7 @@ class MouseDragCameraRotationControls extends PhysicsCharacterControls {
   private onMouseMoveHandler: (event: MouseEvent) => void;
 
   /**
-   * Constructs a new MouseDragCameraRotationControls instance.
+   * Constructs a new ThirdPersonMouseDragControls instance.
    * @param object - The 3D object to control.
    * @param domElement - The HTML element to attach event listeners to.
    * @param worldObject - The world object used for collision detection.
@@ -355,4 +355,4 @@ class MouseDragCameraRotationControls extends PhysicsCharacterControls {
   };
 }
 
-export { MouseDragCameraRotationControls };
+export { ThirdPersonMouseDragControls };

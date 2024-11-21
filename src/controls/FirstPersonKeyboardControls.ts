@@ -36,9 +36,9 @@ const keyStates: Record<Actions, boolean> = {
 };
 
 /**
- * KeyboardObjectRotationControls class allows controlling a 3D object using the keyboard,
+ * FirstPersonKeyboardControls class allows controlling a 3D object using the keyboard,
  */
-class KeyboardObjectRotationControls extends PhysicsControls {
+class FirstPersonKeyboardControls extends PhysicsControls {
   // Character animations
   actionKeys: ActionKeys;
 
@@ -57,7 +57,7 @@ class KeyboardObjectRotationControls extends PhysicsControls {
   private onKeyUpHandler: (event: KeyboardEvent) => void;
 
   /**
-   * Constructs a new KeyboardObjectRotationControls  instance.
+   * Constructs a new FirstPersonKeyboardControls  instance.
    * @param object - The 3D object to control.
    * @param domElement - The HTML element for event listeners (optional).
    * @param worldObject - The world object used for physics collision.
@@ -236,4 +236,4 @@ class KeyboardObjectRotationControls extends PhysicsControls {
   }
 }
 
-export { KeyboardObjectRotationControls };
+export { FirstPersonKeyboardControls };
