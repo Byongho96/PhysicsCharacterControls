@@ -836,7 +836,9 @@ class PhysicsCharacterControls extends PhysicsControls {
         if (this.velocity.y < -this.fallSpeedThreshold) {
             return this._fadeToAction('fall', this.transitionTime);
         }
-        return this._fadeToAction('idle', this.transitionTime);
+        if (this.isGrounded) {
+            return this._fadeToAction('idle', this.transitionTime);
+        }
     }
     /**
      * Updates the _mixer with the given delta time.

@@ -166,7 +166,9 @@ class PhysicsCharacterControls extends PhysicsControls {
       return this._fadeToAction('fall', this.transitionTime);
     }
 
-    return this._fadeToAction('idle', this.transitionTime);
+    if (this.isGrounded) {
+      return this._fadeToAction('idle', this.transitionTime);
+    }
   }
 
   /**
