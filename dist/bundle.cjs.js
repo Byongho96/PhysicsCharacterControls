@@ -574,7 +574,7 @@ class PhysicsControls extends three.Controls {
 /**
  * Global object to track the current state of pressed keys.
  */
-const keyStates$1 = {
+const keyStates$2 = {
     forward: false,
     backward: false,
     leftTurn: false,
@@ -631,23 +631,23 @@ class FirstPersonKeyboardControls extends PhysicsControls {
     updateControls(delta) {
         const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
         // Move forward.
-        if (keyStates$1.forward) {
+        if (keyStates$2.forward) {
             this.velocity.add(this.getForwardVector().multiplyScalar(speedDelta));
         }
         // Move backward.
-        if (keyStates$1.backward) {
+        if (keyStates$2.backward) {
             this.velocity.add(this.getForwardVector().multiplyScalar(-speedDelta));
         }
         // Turn left.
-        if (keyStates$1.leftTurn) {
+        if (keyStates$2.leftTurn) {
             this.object.rotateY(delta * this.rotateSpeed);
         }
         // Turn right.
-        if (keyStates$1.rightTurn) {
+        if (keyStates$2.rightTurn) {
             this.object.rotateY(delta * -this.rotateSpeed);
         }
         // Jump if grounded.
-        if (keyStates$1.jump && this.isGrounded) {
+        if (keyStates$2.jump && this.isGrounded) {
             this.velocity.y = this.jumpForce;
         }
     }
@@ -690,19 +690,19 @@ class FirstPersonKeyboardControls extends PhysicsControls {
     onKeyDown(event) {
         var _a, _b, _c, _d, _e;
         if ((_a = this.actionKeys.forward) === null || _a === void 0 ? void 0 : _a.some(key => event.key === key)) {
-            keyStates$1.forward = true;
+            keyStates$2.forward = true;
         }
         if ((_b = this.actionKeys.backward) === null || _b === void 0 ? void 0 : _b.some(key => event.key === key)) {
-            keyStates$1.backward = true;
+            keyStates$2.backward = true;
         }
         if ((_c = this.actionKeys.leftTurn) === null || _c === void 0 ? void 0 : _c.some(key => event.key === key)) {
-            keyStates$1.leftTurn = true;
+            keyStates$2.leftTurn = true;
         }
         if ((_d = this.actionKeys.rightTurn) === null || _d === void 0 ? void 0 : _d.some(key => event.key === key)) {
-            keyStates$1.rightTurn = true;
+            keyStates$2.rightTurn = true;
         }
         if ((_e = this.actionKeys.jump) === null || _e === void 0 ? void 0 : _e.some(key => event.key === key)) {
-            keyStates$1.jump = true;
+            keyStates$2.jump = true;
         }
     }
     /**
@@ -712,19 +712,19 @@ class FirstPersonKeyboardControls extends PhysicsControls {
     onKeyUp(event) {
         var _a, _b, _c, _d, _e;
         if ((_a = this.actionKeys.forward) === null || _a === void 0 ? void 0 : _a.some(key => event.key === key)) {
-            keyStates$1.forward = false;
+            keyStates$2.forward = false;
         }
         if ((_b = this.actionKeys.backward) === null || _b === void 0 ? void 0 : _b.some(key => event.key === key)) {
-            keyStates$1.backward = false;
+            keyStates$2.backward = false;
         }
         if ((_c = this.actionKeys.leftTurn) === null || _c === void 0 ? void 0 : _c.some(key => event.key === key)) {
-            keyStates$1.leftTurn = false;
+            keyStates$2.leftTurn = false;
         }
         if ((_d = this.actionKeys.rightTurn) === null || _d === void 0 ? void 0 : _d.some(key => event.key === key)) {
-            keyStates$1.rightTurn = false;
+            keyStates$2.rightTurn = false;
         }
         if ((_e = this.actionKeys.jump) === null || _e === void 0 ? void 0 : _e.some(key => event.key === key)) {
-            keyStates$1.jump = false;
+            keyStates$2.jump = false;
         }
     }
 }
@@ -861,7 +861,7 @@ class PhysicsCharacterControls extends PhysicsControls {
 /**
  * Global object to track the current state of pressed keys.
  */
-const keyStates = {
+const keyStates$1 = {
     forward: false,
     backward: false,
     leftward: false,
@@ -924,6 +924,244 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
         this.onKeyUpHandler = this.onKeyUp.bind(this);
         this.onMouseDownHandler = this.onMouseDown.bind(this);
         this.onMouseUpHandler = this.onMouseUp.bind(this);
+        this.onMouseMoveHandler = this.onMouseMove.bind(this);
+        // Connect event listeners
+        this.connect();
+    }
+    get cameraPosOffset() {
+        return this._cameraPositionOffset;
+    }
+    set cameraPosOffset(offset) {
+        this._cameraPositionOffset = offset;
+        this.updateCameraInfo();
+    }
+    get cameraLookAtOffset() {
+        return this._cameraLookAtOffset;
+    }
+    set cameraLookAtOffset(offset) {
+        this._cameraLookAtOffset = offset;
+        this.updateCameraInfo();
+    }
+    /**
+     * Updates the camera's spherical coordinates based on the current offsets.
+     */
+    updateCameraInfo() {
+        const subVector = this._cameraPositionOffset.clone().sub(this._cameraLookAtOffset);
+        this._spherical.setFromVector3(subVector);
+    }
+    /**
+     * Gets the forward direction vector based on the camera's orientation.
+     * @returns Normalized forward vector.
+     */
+    getForwardVector() {
+        this.camera.getWorldDirection(this._objectWorldDirection);
+        this._objectWorldDirection.y = 0;
+        this._objectWorldDirection.normalize();
+        return this._objectWorldDirection;
+    }
+    /**
+     * Gets the side (right) direction vector based on the camera's orientation.
+     * @returns Normalized side vector.
+     */
+    getSideVector() {
+        this.camera.getWorldDirection(this._objectWorldDirection);
+        this._objectWorldDirection.y = 0;
+        this._objectWorldDirection.normalize();
+        this._objectWorldDirection.cross(this.object.up);
+        return this._objectWorldDirection;
+    }
+    updateSync() {
+        if (this.axisSync === 'always') {
+            this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
+            return;
+        }
+        if (this.axisSync === 'move' &&
+            (keyStates$1.forward || keyStates$1.backward || keyStates$1.leftward || keyStates$1.rightward)) {
+            this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
+            return;
+        }
+    }
+    /**
+     * Updates the object's velocity based on keyboard input.
+     * @param delta - Time delta for frame-independent movement.
+     */
+    updateControls(delta) {
+        const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        // Reset movement vector
+        const movement = this._accumulatedDirection.set(0, 0, 0);
+        // Accumulate movement vectors based on key states
+        if (keyStates$1.leftward) {
+            movement.add(this.getSideVector().multiplyScalar(-1));
+        }
+        if (keyStates$1.rightward) {
+            movement.add(this.getSideVector());
+        }
+        if (keyStates$1.backward) {
+            movement.add(this.getForwardVector().multiplyScalar(-1));
+        }
+        if (keyStates$1.forward) {
+            movement.add(this.getForwardVector());
+        }
+        // Apply accumulated movement vector
+        if (movement.lengthSq() > 1e-10) {
+            movement.normalize();
+            this.velocity.add(movement.multiplyScalar(speedDelta));
+            this.object.lookAt(this.object.position.clone().add(movement));
+        }
+        // Jump if grounded.
+        if (keyStates$1.jump && this.isGrounded) {
+            this.velocity.y = this.jumpForce;
+        }
+    }
+    /**
+     * Updates the camera's position and orientation based on the object's position and mouse input.
+     */
+    updateCamera() {
+        this.object.updateMatrixWorld();
+        const lookAtPosition = this._cameraLookAtPosition.copy(this.object.position).add(this._cameraLookAtOffset);
+        this.camera.position.setFromSpherical(this._spherical).add(lookAtPosition);
+        this.camera.lookAt(lookAtPosition);
+    }
+    /**
+     * Main update function that integrates controls, physics, camera, and animations.
+     * @param delta - Time delta for consistent updates.
+     */
+    update(delta) {
+        super.update(delta);
+        this.updateCamera();
+        this.updateSync();
+        this.updateControls(delta);
+    }
+    /**
+     * Connects the controls by adding event listeners.
+     */
+    connect() {
+        var _a, _b;
+        super.connect();
+        document.addEventListener('keydown', this.onKeyDownHandler);
+        document.addEventListener('keyup', this.onKeyUpHandler);
+        (_a = this.domElement) === null || _a === void 0 ? void 0 : _a.addEventListener('mousedown', this.onMouseDownHandler);
+        document.addEventListener('mouseup', this.onMouseUpHandler);
+        (_b = this.domElement) === null || _b === void 0 ? void 0 : _b.addEventListener('mousemove', this.onMouseMoveHandler);
+    }
+    /**
+     * Disconnects the controls by removing event listeners.
+     */
+    disconnect() {
+        var _a, _b;
+        super.disconnect();
+        document.removeEventListener('keydown', this.onKeyDownHandler);
+        document.removeEventListener('keyup', this.onKeyUpHandler);
+        (_a = this.domElement) === null || _a === void 0 ? void 0 : _a.removeEventListener('mousedown', this.onMouseDownHandler);
+        document.removeEventListener('mouseup', this.onMouseUpHandler);
+        (_b = this.domElement) === null || _b === void 0 ? void 0 : _b.removeEventListener('mousemove', this.onMouseMoveHandler);
+    }
+    dispose() {
+        this.disconnect();
+        super.dispose();
+    }
+    /** Handles keydown events, updating the key state. */
+    onKeyDown(event) {
+        var _a, _b, _c, _d, _e;
+        if ((_a = this.actionKeys.forward) === null || _a === void 0 ? void 0 : _a.some(key => event.key === key)) {
+            keyStates$1.forward = true;
+        }
+        if ((_b = this.actionKeys.backward) === null || _b === void 0 ? void 0 : _b.some(key => event.key === key)) {
+            keyStates$1.backward = true;
+        }
+        if ((_c = this.actionKeys.leftward) === null || _c === void 0 ? void 0 : _c.some(key => event.key === key)) {
+            keyStates$1.leftward = true;
+        }
+        if ((_d = this.actionKeys.rightward) === null || _d === void 0 ? void 0 : _d.some(key => event.key === key)) {
+            keyStates$1.rightward = true;
+        }
+        if ((_e = this.actionKeys.jump) === null || _e === void 0 ? void 0 : _e.some(key => event.key === key)) {
+            keyStates$1.jump = true;
+        }
+    }
+    /** Handles keyup events, updating the key state. */
+    onKeyUp(event) {
+        var _a, _b, _c, _d, _e;
+        if ((_a = this.actionKeys.forward) === null || _a === void 0 ? void 0 : _a.some(key => event.key === key)) {
+            keyStates$1.forward = false;
+        }
+        if ((_b = this.actionKeys.backward) === null || _b === void 0 ? void 0 : _b.some(key => event.key === key)) {
+            keyStates$1.backward = false;
+        }
+        if ((_c = this.actionKeys.leftward) === null || _c === void 0 ? void 0 : _c.some(key => event.key === key)) {
+            keyStates$1.leftward = false;
+        }
+        if ((_d = this.actionKeys.rightward) === null || _d === void 0 ? void 0 : _d.some(key => event.key === key)) {
+            keyStates$1.rightward = false;
+        }
+        if ((_e = this.actionKeys.jump) === null || _e === void 0 ? void 0 : _e.some(key => event.key === key)) {
+            keyStates$1.jump = false;
+        }
+    }
+}
+
+/**
+ * Global object to track the current state of pressed keys.
+ */
+const keyStates = {
+    forward: false,
+    backward: false,
+    leftward: false,
+    rightward: false,
+    jump: false,
+};
+/**
+ * Controls class that allows movement with the keyboard and rotation with the mouse.
+ */
+class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
+    /**
+     * Constructs a new ThirdPersonMouseDragControls instance.
+     * @param object - The 3D object to control.
+     * @param domElement - The HTML element to attach event listeners to.
+     * @param worldObject - The world object used for collision detection.
+     * @param actionKeys - Key mappings for actions.
+     * @param cameraOptions - Configuration options for the camera.
+     * @param animationOptions - Animation clips and options.
+     * @param physicsOptions - Physics options.
+     */
+    constructor(object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions = {}, physicsOptions = {}) {
+        var _a, _b, _c, _d, _e;
+        super(object, domElement, worldObject, animationOptions, physicsOptions);
+        this._isMouseDown = false;
+        // Temporary vectors for calculations
+        this._objectWorldDirection = new three.Vector3();
+        this._accumulatedDirection = new three.Vector3();
+        this._cameraLookAtPosition = new three.Vector3();
+        /** Handles mousedown events to lock pointer. */
+        this.onMouseDown = () => {
+            var _a;
+            (_a = this.domElement) === null || _a === void 0 ? void 0 : _a.requestPointerLock();
+        };
+        /** Handles mousemove events to update camera angles when pointer is locked. */
+        this.onMouseMove = (event) => {
+            if (document.pointerLockElement !== this.domElement)
+                return;
+            this._spherical.theta -= (event.movementX * this.rotateSpeed) / 100;
+            this._spherical.phi -= (event.movementY * this.rotateSpeed) / 100;
+            // Clamp the camera angles to prevent flipping
+            this._spherical.phi = Math.max(0.01, Math.min(Math.PI - 0.01, this._spherical.phi));
+        };
+        this.actionKeys = actionKeys;
+        this.camera = camera;
+        this._cameraPositionOffset = cameraOptions.posOffset;
+        this._cameraLookAtOffset = cameraOptions.lookAtOffset;
+        this._spherical = new three.Spherical();
+        this.updateCameraInfo();
+        this.axisSync = (_a = cameraOptions.axisSync) !== null && _a !== void 0 ? _a : 'move';
+        // Set physics options with default values
+        this.jumpForce = (_b = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.jumpForce) !== null && _b !== void 0 ? _b : 15;
+        this.groundMoveSpeed = (_c = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.groundMoveSpeed) !== null && _c !== void 0 ? _c : 25;
+        this.floatMoveSpeed = (_d = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.floatMoveSpeed) !== null && _d !== void 0 ? _d : 8;
+        this.rotateSpeed = (_e = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _e !== void 0 ? _e : 1;
+        // Bind key event handlers.
+        this.onKeyDownHandler = this.onKeyDown.bind(this);
+        this.onKeyUpHandler = this.onKeyUp.bind(this);
+        this.onMouseDownHandler = this.onMouseDown.bind(this);
         this.onMouseMoveHandler = this.onMouseMove.bind(this);
         // Connect event listeners
         this.connect();
@@ -1041,7 +1279,6 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
         document.addEventListener('keydown', this.onKeyDownHandler);
         document.addEventListener('keyup', this.onKeyUpHandler);
         (_a = this.domElement) === null || _a === void 0 ? void 0 : _a.addEventListener('mousedown', this.onMouseDownHandler);
-        document.addEventListener('mouseup', this.onMouseUpHandler);
         (_b = this.domElement) === null || _b === void 0 ? void 0 : _b.addEventListener('mousemove', this.onMouseMoveHandler);
     }
     /**
@@ -1053,7 +1290,6 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
         document.removeEventListener('keydown', this.onKeyDownHandler);
         document.removeEventListener('keyup', this.onKeyUpHandler);
         (_a = this.domElement) === null || _a === void 0 ? void 0 : _a.removeEventListener('mousedown', this.onMouseDownHandler);
-        document.removeEventListener('mouseup', this.onMouseUpHandler);
         (_b = this.domElement) === null || _b === void 0 ? void 0 : _b.removeEventListener('mousemove', this.onMouseMoveHandler);
     }
     dispose() {
@@ -1159,3 +1395,4 @@ class PhysicsControlsHelper extends three.Group {
 exports.FirstPersonKeyboardControls = FirstPersonKeyboardControls;
 exports.PhysicsControlsHelper = PhysicsControlsHelper;
 exports.ThirdPersonMouseDragControls = ThirdPersonMouseDragControls;
+exports.ThirdPersonPointerLockControls = ThirdPersonPointerLockControls;
