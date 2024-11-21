@@ -8,15 +8,10 @@ export interface PhysicsControlsEventMap {
     /**
      * Fires when the collider has collided with the world.
      */
-    collide: {};
-    /**
-     * Fires when the collider is falling.
-     */
-    fall: {};
-    /**
-     * Fires when the collider is grounded.
-     */
-    grounded: {};
+    collide: {
+        position: Vector3;
+        normal: Vector3;
+    };
 }
 /**
  * Defines the minimum and maximum boundaries along an axis.
@@ -38,6 +33,7 @@ type Boundary = {
  * Options to configure the physics properties of the PhysicsControls.
  */
 export type PhysicsOptions = {
+    step?: number;
     gravity?: number;
     maxFallSpeed?: number;
     movementResistance?: number;
@@ -51,13 +47,15 @@ export type PhysicsOptions = {
 declare class PhysicsControls extends Controls<PhysicsControlsEventMap> {
     private _worldOctree;
     private _capsuleCollider;
+    step: number;
     gravity: number;
     maxFallSpeed: number;
     movementResistance: number;
     velocity: Vector3;
     boundary?: Boundary;
     private _isGrounded;
-    private _deltaPosition;
+    private _deltaVelocity;
+    private _collisionPosition;
     /**
      * Constructs a new PhysicsControls instance.
      * @param object - The 3D object to apply physics controls to.
@@ -72,16 +70,16 @@ declare class PhysicsControls extends Controls<PhysicsControlsEventMap> {
      * Checks for collisions between the player's collider and the world octree.
      * Updates the player's grounded state and adjusts velocity and position accordingly.
      */
-    private checkCollisions;
+    private _checkCollisions;
+    /**
+     * Resets the player's position if they are out of the defined world boundaries.
+     */
+    private _teleportPlayerIfOutOfBounds;
     /**
      * Updates the player's physics state.
      * @param delta - The time step for the update (in seconds).
      */
     update(delta: number): void;
-    /**
-     * Resets the player's position if they are out of the defined world boundaries.
-     */
-    private teleportPlayerIfOutOfBounds;
     connect(): void;
     disconnect(): void;
     dispose(): void;

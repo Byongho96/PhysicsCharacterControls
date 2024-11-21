@@ -1,82 +1,52 @@
-import { AnimationClip, Camera, Object3D, Vector3 } from 'three';
+import { Object3D } from 'three';
 import { PhysicsControls, PhysicsOptions } from './base/PhysicsControls';
 /**
  * Actions that can be performed via keyboard input.
  */
 type Actions = 'forward' | 'backward' | 'leftTurn' | 'rightTurn' | 'jump';
 /**
- * Possible animations corresponding to actions or states.
- */
-type Animations = 'idle' | 'forward' | 'backward' | 'jump' | 'fall';
-/**
  * Configuration for key mappings to actions.
  */
-type KeyOptions = {
+type ActionKeys = {
     [K in Actions]?: string[];
-};
-/**
- * Configuration for animation clips and related options.
- */
-type AnimationOptions = {
-    [K in Animations]?: AnimationClip;
-} & {
-    transitionTime?: number;
-    fallSpeedThreshold?: number;
-    moveSpeedThreshold?: number;
-};
-/**
- * Configuration for camera positioning relative to the player.
- */
-type CameraOptions = {
-    camera: Camera;
-    posOffset: Vector3;
-    lookAtOffset: Vector3;
 };
 /**
  * Extended physics options specific to keyboard controls.
  */
 type KeyboardPhysicsOptions = PhysicsOptions & {
+    eyeHeight?: number;
     jumpForce?: number;
     groundMoveSpeed?: number;
     floatMoveSpeed?: number;
     rotateSpeed?: number;
 };
 /**
- * KeyboardObjectRotationControls class allows controlling an object using keyboard input,
- * including movement, rotation, physics simulation, camera control, and animations.
+ * FirstPersonKeyboardControls class allows controlling a 3D object using the keyboard,
  */
-declare class KeyboardObjectRotationControls extends PhysicsControls {
-    /** Character animations handler. */
-    private _characters;
-    camera: Camera | null;
-    cameraPosOffset: Vector3 | null;
-    cameraLookAtOffset: Vector3 | null;
-    keyOptions: KeyOptions;
+declare class FirstPersonKeyboardControls extends PhysicsControls {
+    actionKeys: ActionKeys;
+    eyeHeight: number;
     jumpForce: number;
     groundMoveSpeed: number;
     floatMoveSpeed: number;
     rotateSpeed: number;
-    transitionTime: number;
-    fallSpeedThreshold: number;
-    moveSpeedThreshold: number;
-    private _tempVector;
-    private _direction;
+    private _objectWorldDirection;
     private onKeyDownHandler;
     private onKeyUpHandler;
     /**
-     * Constructs a new KeyboardObjectRotationControls instance.
+     * Constructs a new FirstPersonKeyboardControls  instance.
      * @param object - The 3D object to control.
      * @param domElement - The HTML element for event listeners (optional).
      * @param worldObject - The world object used for physics collision.
-     * @param keyOptions - Key mappings for actions.
+     * @param actionKeys - Key mappings for actions.
      * @param cameraOptions - Configuration for the camera (optional).
      * @param animationOptions - Configuration for animations (optional).
      * @param physicsOptions - Physics configuration options (optional).
      */
-    constructor(object: Object3D, domElement: HTMLElement | null, worldObject: Object3D, keyOptions: KeyOptions, cameraOptions?: CameraOptions, animationOptions?: AnimationOptions, physicsOptions?: KeyboardPhysicsOptions);
+    constructor(object: Object3D, domElement: HTMLElement | null, worldObject: Object3D, actionKeys: ActionKeys, physicsOptions?: KeyboardPhysicsOptions);
     /**
-     * Retrieves the forward _direction vector of the object, ignoring the Y-axis.
-     * @returns A normalized Vector3 representing the forward _direction.
+     * Retrieves the forward _objectWorldDirection vector of the object, ignoring the Y-axis.
+     * @returns A normalized Vector3 representing the forward _objectWorldDirection.
      */
     private getForwardVector;
     /**
@@ -84,15 +54,6 @@ declare class KeyboardObjectRotationControls extends PhysicsControls {
      * @param delta - The time delta for frame-independent movement.
      */
     private updateControls;
-    /**
-     * Updates the camera's position and orientation based on the object's transformation.
-     */
-    private updateCamera;
-    /**
-     * Updates the character's animations based on the current state and velocity.
-     * @param delta - The time delta for animation blending.
-     */
-    private updateAnimation;
     /**
      * Main update function that integrates controls, physics, camera, and animations.
      * @param delta - The time delta for consistent updates.
@@ -121,4 +82,4 @@ declare class KeyboardObjectRotationControls extends PhysicsControls {
      */
     private onKeyUp;
 }
-export { KeyboardObjectRotationControls };
+export { FirstPersonKeyboardControls };

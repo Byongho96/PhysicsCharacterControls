@@ -1,4 +1,4 @@
-import { ColorRepresentation, Group, LineSegments } from 'three';
+import { BoxGeometry, CapsuleGeometry, ColorRepresentation, Group, LineBasicMaterial, LineSegments } from 'three';
 import { PhysicsControls } from '../controls/base/PhysicsControls';
 /**
  * Helper class for visualizing the PhysicsControls' collider and boundaries.
@@ -6,8 +6,8 @@ import { PhysicsControls } from '../controls/base/PhysicsControls';
 declare class PhysicsControlsHelper extends Group {
     readonly type: string;
     controls: PhysicsControls;
-    capsuleHelper: LineSegments;
-    boundaryHelper?: LineSegments;
+    capsuleHelper: LineSegments<CapsuleGeometry, LineBasicMaterial>;
+    boundaryHelper?: LineSegments<BoxGeometry, LineBasicMaterial>;
     private _capsulePosition;
     /**
      * Constructs a new PhysicsControlsHelper.

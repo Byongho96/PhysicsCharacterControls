@@ -10,25 +10,13 @@ export interface PhysicsControlsEventMap {
   /**
    * Fires when the collider has collided with the world.
    */
-  collide: {};
-
-  /**
-   * Fires when the collider is falling.
-   */
-  fall: {};
-
-  /**
-   * Fires when the collider is grounded.
-   */
-  grounded: {};
+  collide: { position: Vector3; normal: Vector3 };
 }
 
 /**
  * Predefined event objects for reuse when dispatching events.
  */
 const _collideEvent = { type: 'collide' as keyof PhysicsControlsEventMap };
-const _fallEvent = { type: 'fall' as keyof PhysicsControlsEventMap };
-const _groundedEvent = { type: 'grounded' as keyof PhysicsControlsEventMap };
 
 /**
  * Defines the minimum and maximum boundaries along an axis.
@@ -52,6 +40,7 @@ type Boundary = {
  * Options to configure the physics properties of the PhysicsControls.
  */
 export type PhysicsOptions = {
+  step?: number; // Time step for the delicate physics calculations (default: )
   gravity?: number; // Gravity of the world (default: 30)
   maxFallSpeed?: number; // Maximum fall speed of the player (default: 20)
   movementResistance?: number; // Resistance of the player movement (default: 4)
@@ -68,6 +57,7 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
   private _capsuleCollider: ColliderCapsule;
 
   // Physics properties
+  step: number;
   gravity: number;
   maxFallSpeed: number;
   movementResistance: number;
@@ -76,7 +66,10 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
   boundary?: Boundary;
 
   private _isGrounded: boolean = false;
-  private _deltaPosition: Vector3 = new Vector3(); // Temporary vector for delta position calculations
+
+  // Temporary vectors for calculations
+  private _deltaVelocity: Vector3 = new Vector3();
+  private _collisionPosition: Vector3 = new Vector3();
 
   /**
    * Constructs a new PhysicsControls instance.
@@ -103,6 +96,7 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
     this._capsuleCollider.translate(object.position);
 
     // Set physics properties
+    this.step = physicsOptions?.step ?? 5;
     this.gravity = physicsOptions?.gravity ?? 30;
     this.maxFallSpeed = physicsOptions?.maxFallSpeed ?? 20;
     this.movementResistance = physicsOptions?.movementResistance ?? 4;
@@ -123,28 +117,43 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
    * Checks for collisions between the player's collider and the world octree.
    * Updates the player's grounded state and adjusts velocity and position accordingly.
    */
-  private checkCollisions() {
+  private _checkCollisions() {
     this._isGrounded = false;
 
-    const collisionResult = this._worldOctree.capsuleIntersect(this._capsuleCollider);
+    const collisionResult = this._worldOctree.capsuleIntersect(this.collider);
 
     if (!collisionResult) return;
-
-    this.dispatchEvent(_collideEvent);
 
     if (collisionResult.normal.y > 0) {
       // Player is grounded.
       this._isGrounded = true;
-      this.dispatchEvent(_groundedEvent);
-    } else {
-      // Player is colliding but not grounded.
-      this.velocity.addScaledVector(collisionResult.normal, -collisionResult.normal.dot(this.velocity));
-      this.dispatchEvent(_fallEvent);
     }
 
     // Adjust the collider position to resolve penetration.
     if (collisionResult.depth >= 1e-10) {
-      this._capsuleCollider.translate(collisionResult.normal.multiplyScalar(collisionResult.depth));
+      this.collider.translate(collisionResult.normal.multiplyScalar(collisionResult.depth));
+
+      const position =
+        this.collider.getCenter(this._collisionPosition) +
+        collisionResult.normal.multiplyScalar(-0.5 * collisionResult.depth);
+      this.dispatchEvent({ ..._collideEvent, position: position, normal: collisionResult.normal });
+    }
+  }
+
+  /**
+   * Resets the player's position if they are out of the defined world boundaries.
+   */
+  private _teleportPlayerIfOutOfBounds() {
+    if (!this.boundary) return;
+
+    const { resetPoint, x, y, z } = this.boundary;
+    const { x: px, y: py, z: pz } = this.object.position;
+
+    // Check if the player is out of bounds.
+    if (px < x.min || px > x.max || py < y.min || py > y.max || pz < z.min || pz > z.max) {
+      this.collider.start.set(resetPoint.x, resetPoint.y + this.collider.radius, resetPoint.z);
+      this.collider.end.set(resetPoint.x, resetPoint.y + this.collider.height - this.collider.radius, resetPoint.z);
+      this.velocity.set(0, 0, 0);
     }
   }
 
@@ -157,49 +166,30 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
 
     super.update(delta);
 
-    // Apply movement resistance (damping).
-    let damping = Math.exp(-this.movementResistance * delta) - 1;
+    const stepDelta = delta / this.step;
 
-    if (!this._isGrounded) {
-      this.velocity.y -= this.gravity * delta;
-      this.velocity.y = Math.max(this.velocity.y, -this.maxFallSpeed);
-      damping *= 0.1; // Small air resistance
+    for (let i = 0; i < this.step; i++) {
+      // Apply movement resistance (damping).
+      let damping = Math.exp(-this.movementResistance * stepDelta) - 1; // Always negative
+
+      if (!this._isGrounded) {
+        this.velocity.y -= this.gravity * stepDelta;
+        this.velocity.y = Math.max(this.velocity.y, -this.maxFallSpeed); // Limit fall speed
+        damping *= 0.1; // Small air resistance
+      }
+
+      this.velocity.addScaledVector(this.velocity, damping);
+      this._deltaVelocity.copy(this.velocity).multiplyScalar(stepDelta);
+      this.collider.translate(this._deltaVelocity);
+
+      this._checkCollisions();
+
+      this._teleportPlayerIfOutOfBounds();
     }
-
-    this.velocity.addScaledVector(this.velocity, damping);
-    this._deltaPosition.copy(this.velocity).multiplyScalar(delta);
-    this._capsuleCollider.translate(this._deltaPosition);
-
-    this.checkCollisions();
-
-    this.teleportPlayerIfOutOfBounds();
 
     // Update the object's position to match the collider.
-    this.object.position.copy(this._capsuleCollider.start);
-    this.object.position.y -= this._capsuleCollider.radius;
-  }
-
-  /**
-   * Resets the player's position if they are out of the defined world boundaries.
-   */
-  private teleportPlayerIfOutOfBounds() {
-    if (!this.boundary) return;
-
-    const { resetPoint, x, y, z } = this.boundary;
-    const { x: px, y: py, z: pz } = this.object.position;
-
-    // Check if the player is out of bounds.
-    if (px < x.min || px > x.max || py < y.min || py > y.max || pz < z.min || pz > z.max) {
-      this._capsuleCollider.start.set(resetPoint.x, resetPoint.y + this._capsuleCollider.radius, resetPoint.z);
-      this._capsuleCollider.end.set(
-        resetPoint.x,
-        resetPoint.y + this._capsuleCollider.height - this._capsuleCollider.radius,
-        resetPoint.z,
-      );
-
-      this.object.position.copy(resetPoint);
-      this.velocity.set(0, 0, 0);
-    }
+    this.object.position.copy(this.collider.start);
+    this.object.position.y -= this.collider.radius;
   }
 
   connect() {

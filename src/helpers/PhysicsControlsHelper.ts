@@ -17,8 +17,8 @@ class PhysicsControlsHelper extends Group {
 
   controls: PhysicsControls;
 
-  capsuleHelper: LineSegments;
-  boundaryHelper?: LineSegments;
+  capsuleHelper: LineSegments<CapsuleGeometry, LineBasicMaterial>;
+  boundaryHelper?: LineSegments<BoxGeometry, LineBasicMaterial>;
 
   private _capsulePosition: Vector3 = new Vector3();
 
@@ -38,6 +38,7 @@ class PhysicsControlsHelper extends Group {
       controls.collider.height - 2 * controls.collider.radius,
     );
     this.capsuleHelper = new LineSegments(capsuleGeometry, new LineBasicMaterial({ color: color, toneMapped: false }));
+    this.capsuleHelper.frustumCulled = false;
     this.add(this.capsuleHelper);
 
     // Create box geometry to visualize the boundary if it is set.
@@ -46,7 +47,7 @@ class PhysicsControlsHelper extends Group {
       const height = controls.boundary.y.max - controls.boundary.y.min;
       const depth = controls.boundary.z.max - controls.boundary.z.min;
 
-      const boxGeometry = new BoxGeometry(width, height, depth);
+      const boxGeometry = new BoxGeometry(width, height, depth, width, height, depth);
       this.boundaryHelper = new LineSegments(boxGeometry, new LineBasicMaterial({ color: color, toneMapped: false }));
 
       this.boundaryHelper.position.set(
@@ -69,11 +70,10 @@ class PhysicsControlsHelper extends Group {
   update() {
     this.controls.object.updateMatrixWorld(true);
 
-    this._capsulePosition.copy(this.controls.object.position);
+    this.controls.object.getWorldPosition(this._capsulePosition);
     this._capsulePosition.y += this.controls.collider.height / 2;
 
     this.capsuleHelper.position.copy(this._capsulePosition);
-    this.capsuleHelper.rotation.copy(this.controls.object.rotation);
 
     this.updateMatrix();
   }
@@ -83,11 +83,11 @@ class PhysicsControlsHelper extends Group {
    */
   dispose() {
     this.capsuleHelper.geometry.dispose();
-    (this.capsuleHelper.material as LineBasicMaterial).dispose();
+    this.capsuleHelper.material.dispose();
 
     if (this.boundaryHelper) {
       this.boundaryHelper.geometry.dispose();
-      (this.capsuleHelper.material as LineBasicMaterial).dispose();
+      this.boundaryHelper.material.dispose();
     }
 
     this.clear();

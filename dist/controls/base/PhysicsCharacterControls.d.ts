@@ -1,22 +1,29 @@
 import { AnimationClip, Object3D } from 'three';
+import { PhysicsControls, PhysicsOptions } from './PhysicsControls';
 /**
- * Type definition for a collection of animation clips.
+ * Animation states that can be used.
  */
-export type AnimationClips = Record<string, AnimationClip>;
+type Animations = 'idle' | 'forward' | 'backward' | 'rightward' | 'leftward' | 'jump' | 'fall';
 /**
- * Class representing a character or group of characters with animations.
+ * Configuration for animations and their options.
  */
-declare class Characters {
+export type AnimationOptions = {
+    animationClips?: Partial<Record<Animations, AnimationClip>>;
+    transitionTime?: number;
+    fallSpeedThreshold?: number;
+    moveSpeedThreshold?: number;
+};
+declare class PhysicsCharacterControls extends PhysicsControls {
     private _mixer;
     private _objectGroup;
     private _animationClips;
     private _animationActions;
-    /**
-     * Constructs a new Characters instance.
-     * @param object - The initial Object3D to add to the character.
-     * @param _animationClips - Optional initial animation clips.
-     */
-    constructor(object: Object3D, _animationClips?: AnimationClips);
+    transitionTime: number;
+    fallSpeedThreshold: number;
+    moveSpeedThreshold: number;
+    private _localVelocity;
+    private _worldQuaternion;
+    constructor(object: Object3D, domElement: HTMLElement | null, world: Object3D, animationOptions?: AnimationOptions, physicsOptions?: PhysicsOptions);
     /**
      * Returns a read-only copy of the animation clips.
      */
@@ -49,7 +56,11 @@ declare class Characters {
      * @param key - The identifier for the animation action to transition to.
      * @param duration - The duration of the transition in seconds.
      */
-    fadeToAction(key: string, duration: number): void;
+    private _fadeToAction;
+    /**
+     * Updates the animation based on the current state of the player.
+     */
+    private _updateAnimation;
     /**
      * Updates the _mixer with the given delta time.
      * @param delta - The time increment in seconds.
@@ -60,4 +71,4 @@ declare class Characters {
      */
     dispose(): void;
 }
-export { Characters };
+export default PhysicsCharacterControls;
