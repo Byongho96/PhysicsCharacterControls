@@ -21,6 +21,7 @@ export type CameraOptions = {
   axisSync?: 'always' | 'move' | 'never';
   posOffset: Vector3;
   lookAtOffset: Vector3;
+  positionLerpForce?: number;
 };
 
 /**
@@ -69,6 +70,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
   private _objectWorldDirection: Vector3 = new Vector3();
   private _accumulatedDirection: Vector3 = new Vector3();
   private _cameraLookAtPosition: Vector3 = new Vector3();
+  private cameraPositionLerpForce: number = 0;
 
   // Handlers for keyboard events.
   private onKeyDownHandler: (event: KeyboardEvent) => void;
@@ -106,6 +108,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
     this._cameraPositionOffset = cameraOptions.posOffset;
     this._cameraLookAtOffset = cameraOptions.lookAtOffset;
     this._spherical = new Spherical();
+    this.cameraPositionLerpForce = cameraOptions.positionLerpForce ?? 0;
     this.updateCameraInfo();
 
     this.axisSync = cameraOptions.axisSync ?? 'move';
@@ -237,7 +240,16 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
   private updateCamera() {
     this.object.updateMatrixWorld();
 
-    const lookAtPosition = this._cameraLookAtPosition.copy(this.object.position).add(this._cameraLookAtOffset);
+    const targetVector = new Vector3().addVectors(this.object.position, this._cameraLookAtOffset);
+
+    const lookAtPosition = new Vector3();
+    if (this.cameraPositionLerpForce > 0) {
+      const distance = this._cameraLookAtPosition.distanceTo(targetVector);
+      lookAtPosition.copy(this._cameraLookAtPosition.lerp(targetVector, this.cameraPositionLerpForce * distance));
+    } else {
+      lookAtPosition.copy(targetVector);
+    }
+
     this.camera.position.setFromSpherical(this._spherical).add(lookAtPosition);
 
     this.camera.lookAt(lookAtPosition);

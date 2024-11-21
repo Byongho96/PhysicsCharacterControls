@@ -147,6 +147,7 @@
         cameraLookAt.add(controls.cameraLookAtOffset, 'x', -10, 10).name('x').listen();
         cameraLookAt.add(controls.cameraLookAtOffset, 'y', -10, 10).name('y').listen();
         cameraLookAt.add(controls.cameraLookAtOffset, 'z', -10, 10).name('z').listen();
+        folder4.add(controls, 'cameraPositionLerpForce', 0, 0.5).name('lerp force').listen();
       });
 
       // Scene
