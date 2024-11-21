@@ -33,8 +33,6 @@
       import { MouseDragCameraRotationControls } from 'physics-character-controls';
       import { PhysicsControlsHelper } from 'physics-character-controls';
 
-      const STEPS_PER_FRAME = 5;
-
       const container = document.getElementById('container');
 
       const gui = new GUI({ width: 200 });
@@ -76,6 +74,7 @@
           character.scene,
           renderer.domElement,
           world.scene,
+          camera,
           {
             forward: ['ArrowUp', 'w'],
             backward: ['ArrowDown', 's'],
@@ -84,15 +83,16 @@
             jump: [' '],
           },
           {
-            camera,
             posOffset: new THREE.Vector3(0, 2, -2),
             lookAtOffset: new THREE.Vector3(0, 1, 0),
           },
           {
-            idle: idle.animations[0],
-            forward: walking.animations[0],
-            jump: jumping.animations[0],
-            fall: falling.animations[0],
+            animationClips: {
+              idle: idle.animations[0],
+              forward: walking.animations[0],
+              jump: jumping.animations[0],
+              fall: falling.animations[0],
+            },
           },
           {
             boundary: {
@@ -194,11 +194,9 @@
       container.appendChild(stats.domElement);
 
       function animate() {
-        const deltaTime = Math.min(0.05, clock.getDelta()) / STEPS_PER_FRAME;
+        const delta = Math.min(0.05, clock.getDelta());
 
-        for (let i = 0; i < STEPS_PER_FRAME; i++) {
-          controls && controls.update(deltaTime);
-        }
+        controls && controls.update(delta);
 
         helpers && helpers.update();
 

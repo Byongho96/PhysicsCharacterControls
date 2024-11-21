@@ -1,6 +1,6 @@
-import { AnimationClip, Camera, Object3D, Vector3 } from 'three';
-import { PhysicsControls, PhysicsOptions } from './base/PhysicsControls';
-import { Characters } from '../characters/Characters';
+import { Camera, Object3D, Spherical, Vector3 } from 'three';
+import { PhysicsOptions } from './base/PhysicsControls';
+import PhysicsCharacterControls, { AnimationOptions } from './base/PhysicsCharacterControls';
 
 /**
  * Possible actions that can be mapped to keyboard inputs.
@@ -8,29 +8,17 @@ import { Characters } from '../characters/Characters';
 type Actions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'jump';
 
 /**
- * Animation states that can be used.
+ * Configuration for key mappings to actions.
  */
-type Animations = 'idle' | 'forward' | 'jump' | 'fall';
-
-/**
- * Configuration for mapping actions to keyboard keys.
- */
-export type KeyOptions = Partial<Record<Actions, string[]>>;
-
-/**
- * Configuration for animations and their options.
- */
-export type AnimationOptions = Partial<Record<Animations, AnimationClip>> & {
-  transitionTime?: number;
-  fallSpeedThreshold?: number;
-  moveSpeedThreshold?: number;
+type ActionKeys = {
+  [K in Actions]?: string[]; // Mapping each action to possible key bindings
 };
 
 /**
  * Configuration options for camera control.
  */
 export type CameraOptions = {
-  camera: Camera;
+  axisSync?: 'always' | 'move' | 'never';
   posOffset: Vector3;
   lookAtOffset: Vector3;
 };
@@ -46,21 +34,28 @@ export type MouseDragPhysicsOptions = PhysicsOptions & {
 };
 
 /**
+ * Global object to track the current state of pressed keys.
+ */
+const keyStates: Record<Actions, boolean> = {
+  forward: false,
+  backward: false,
+  leftward: false,
+  rightward: false,
+  jump: false,
+};
+
+/**
  * Controls class that allows movement with the keyboard and rotation with the mouse.
  */
-class MouseDragCameraRotationControls extends PhysicsControls {
-  private _characters: Characters;
-
+class MouseDragCameraRotationControls extends PhysicsCharacterControls {
   // Camera options
   camera: Camera;
   private _cameraPositionOffset: Vector3;
   private _cameraLookAtOffset: Vector3;
-  private _cameraRadius: number = 0;
-  private _cameraPhi: number = 0;
-  private _cameraTheta: number = 0;
+  private _spherical: Spherical;
+  axisSync: 'always' | 'move' | 'never';
 
-  keyOptions: KeyOptions;
-  private keyStates: Record<string, boolean> = {};
+  actionKeys: ActionKeys;
 
   private _isMouseDown: boolean = false;
 
@@ -70,22 +65,24 @@ class MouseDragCameraRotationControls extends PhysicsControls {
   floatMoveSpeed: number;
   rotateSpeed: number;
 
-  // Animation options
-  transitionTime: number;
-  fallSpeedThreshold: number;
-  moveSpeedThreshold: number;
-
   // Temporary vectors for calculations
-  private _tempVector1: Vector3 = new Vector3();
-  private _tempVector2: Vector3 = new Vector3();
-  private _tempVector3: Vector3 = new Vector3();
+  private _objectWorldDirection: Vector3 = new Vector3();
+  private _accumulatedDirection: Vector3 = new Vector3();
+  private _cameraLookAtPosition: Vector3 = new Vector3();
+
+  // Handlers for keyboard events.
+  private onKeyDownHandler: (event: KeyboardEvent) => void;
+  private onKeyUpHandler: (event: KeyboardEvent) => void;
+  private onMouseDownHandler: () => void;
+  private onMouseUpHandler: () => void;
+  private onMouseMoveHandler: (event: MouseEvent) => void;
 
   /**
    * Constructs a new MouseDragCameraRotationControls instance.
    * @param object - The 3D object to control.
    * @param domElement - The HTML element to attach event listeners to.
    * @param worldObject - The world object used for collision detection.
-   * @param keyOptions - Key mappings for actions.
+   * @param actionKeys - Key mappings for actions.
    * @param cameraOptions - Configuration options for the camera.
    * @param animationOptions - Animation clips and options.
    * @param physicsOptions - Physics options.
@@ -94,42 +91,37 @@ class MouseDragCameraRotationControls extends PhysicsControls {
     object: Object3D,
     domElement: HTMLElement | null,
     worldObject: Object3D,
-    keyOptions: KeyOptions,
+    camera: Camera,
+    actionKeys: ActionKeys,
     cameraOptions: CameraOptions,
     animationOptions: AnimationOptions = {},
     physicsOptions: MouseDragPhysicsOptions = {},
   ) {
-    super(object, domElement, worldObject, physicsOptions);
+    super(object, domElement, worldObject, animationOptions, physicsOptions);
 
-    // Initialize character animations
-    const { idle, forward, jump, fall } = animationOptions || {};
-    this._characters = new Characters(object, {
-      ...(idle && { idle }),
-      ...(forward && { forward }),
-      ...(jump && { jump }),
-      ...(fall && { fall }),
-    });
+    this.actionKeys = actionKeys;
 
-    this.keyOptions = keyOptions;
-
-    this.camera = cameraOptions.camera;
+    this.camera = camera;
 
     this._cameraPositionOffset = cameraOptions.posOffset;
     this._cameraLookAtOffset = cameraOptions.lookAtOffset;
+    this._spherical = new Spherical();
     this.updateCameraInfo();
 
-    // Set physics options with default values
-    const { jumpForce = 15, groundMoveSpeed = 25, floatMoveSpeed = 8, rotateSpeed = 1 } = physicsOptions;
-    this.jumpForce = jumpForce;
-    this.groundMoveSpeed = groundMoveSpeed;
-    this.floatMoveSpeed = floatMoveSpeed;
-    this.rotateSpeed = rotateSpeed;
+    this.axisSync = cameraOptions.axisSync ?? 'move';
 
-    // Set animation options with default values
-    const { transitionTime = 0.3, fallSpeedThreshold = 15, moveSpeedThreshold = 1 } = animationOptions;
-    this.transitionTime = transitionTime;
-    this.fallSpeedThreshold = fallSpeedThreshold;
-    this.moveSpeedThreshold = moveSpeedThreshold;
+    // Set physics options with default values
+    this.jumpForce = physicsOptions?.jumpForce ?? 15;
+    this.groundMoveSpeed = physicsOptions?.groundMoveSpeed ?? 25;
+    this.floatMoveSpeed = physicsOptions?.floatMoveSpeed ?? 8;
+    this.rotateSpeed = physicsOptions?.rotateSpeed ?? 1;
+
+    // Bind key event handlers.
+    this.onKeyDownHandler = this.onKeyDown.bind(this);
+    this.onKeyUpHandler = this.onKeyUp.bind(this);
+    this.onMouseDownHandler = this.onMouseDown.bind(this);
+    this.onMouseUpHandler = this.onMouseUp.bind(this);
+    this.onMouseMoveHandler = this.onMouseMove.bind(this);
 
     // Connect event listeners
     this.connect();
@@ -157,10 +149,8 @@ class MouseDragCameraRotationControls extends PhysicsControls {
    * Updates the camera's spherical coordinates based on the current offsets.
    */
   private updateCameraInfo() {
-    const subVector = this._tempVector1.copy(this._cameraPositionOffset).sub(this._cameraLookAtOffset);
-    this._cameraRadius = subVector.length();
-    this._cameraPhi = Math.acos(subVector.y / this._cameraRadius);
-    this._cameraTheta = Math.atan2(subVector.z, subVector.x);
+    const subVector = this._cameraPositionOffset.clone().sub(this._cameraLookAtOffset);
+    this._spherical.setFromVector3(subVector);
   }
 
   /**
@@ -168,10 +158,10 @@ class MouseDragCameraRotationControls extends PhysicsControls {
    * @returns Normalized forward vector.
    */
   private getForwardVector(): Vector3 {
-    this.camera.getWorldDirection(this._tempVector1);
-    this._tempVector1.y = 0;
-    this._tempVector1.normalize();
-    return this._tempVector1;
+    this.camera.getWorldDirection(this._objectWorldDirection);
+    this._objectWorldDirection.y = 0;
+    this._objectWorldDirection.normalize();
+    return this._objectWorldDirection;
   }
 
   /**
@@ -179,11 +169,26 @@ class MouseDragCameraRotationControls extends PhysicsControls {
    * @returns Normalized side vector.
    */
   private getSideVector(): Vector3 {
-    this.camera.getWorldDirection(this._tempVector2);
-    this._tempVector2.y = 0;
-    this._tempVector2.normalize();
-    this._tempVector2.cross(this.object.up);
-    return this._tempVector2;
+    this.camera.getWorldDirection(this._objectWorldDirection);
+    this._objectWorldDirection.y = 0;
+    this._objectWorldDirection.normalize();
+    this._objectWorldDirection.cross(this.object.up);
+    return this._objectWorldDirection;
+  }
+
+  private updateSync() {
+    if (this.axisSync === 'always') {
+      this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
+      return;
+    }
+
+    if (
+      this.axisSync === 'move' &&
+      (keyStates.forward || keyStates.backward || keyStates.leftward || keyStates.rightward)
+    ) {
+      this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
+      return;
+    }
   }
 
   /**
@@ -191,35 +196,38 @@ class MouseDragCameraRotationControls extends PhysicsControls {
    * @param delta - Time delta for frame-independent movement.
    */
   private updateControls(delta: number) {
-    // Handle jumping
-    if (this.isGrounded && this.keyOptions.jump?.some(key => this.keyStates[key])) {
-      this.velocity.y = this.jumpForce;
-    }
-
     const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
 
     // Reset movement vector
-    const movement = this._tempVector3.set(0, 0, 0);
+    const movement = this._accumulatedDirection.set(0, 0, 0);
 
     // Accumulate movement vectors based on key states
-    if (this.keyOptions.leftward?.some(key => this.keyStates[key])) {
+    if (keyStates.leftward) {
       movement.add(this.getSideVector().multiplyScalar(-1));
     }
-    if (this.keyOptions.rightward?.some(key => this.keyStates[key])) {
+
+    if (keyStates.rightward) {
       movement.add(this.getSideVector());
     }
-    if (this.keyOptions.backward?.some(key => this.keyStates[key])) {
+
+    if (keyStates.backward) {
       movement.add(this.getForwardVector().multiplyScalar(-1));
     }
-    if (this.keyOptions.forward?.some(key => this.keyStates[key])) {
+
+    if (keyStates.forward) {
       movement.add(this.getForwardVector());
     }
 
-    // Apply movement if any
+    // Apply accumulated movement vector
     if (movement.lengthSq() > 1e-10) {
       movement.normalize();
       this.velocity.add(movement.multiplyScalar(speedDelta));
       this.object.lookAt(this.object.position.clone().add(movement));
+    }
+
+    // Jump if grounded.
+    if (keyStates.jump && this.isGrounded) {
+      this.velocity.y = this.jumpForce;
     }
   }
 
@@ -229,42 +237,10 @@ class MouseDragCameraRotationControls extends PhysicsControls {
   private updateCamera() {
     this.object.updateMatrixWorld();
 
-    const x = this._cameraRadius * Math.sin(this._cameraPhi) * Math.cos(this._cameraTheta);
-    const y = this._cameraRadius * Math.cos(this._cameraPhi);
-    const z = this._cameraRadius * Math.sin(this._cameraPhi) * Math.sin(this._cameraTheta);
+    const lookAtPosition = this._cameraLookAtPosition.copy(this.object.position).add(this._cameraLookAtOffset);
+    this.camera.position.setFromSpherical(this._spherical).add(lookAtPosition);
 
-    const worldOffset = this._tempVector1.copy(this._cameraLookAtOffset).applyMatrix4(this.object.matrixWorld);
-
-    const cameraPosition = this._tempVector2.set(x, y, z).add(worldOffset);
-    this.camera.position.copy(cameraPosition);
-
-    const lookAtPosition = this._tempVector3.copy(this.object.position).add(this._cameraLookAtOffset);
     this.camera.lookAt(lookAtPosition);
-  }
-
-  /**
-   * Updates the character's animations based on the current state and velocity.
-   * @param delta - Time delta for animation updates.
-   */
-  private updateAnimation(delta: number) {
-    this._characters.update(delta);
-
-    this.object.getWorldDirection(this._tempVector1);
-
-    const horizontalSpeed = this._tempVector1.copy(this.velocity);
-    horizontalSpeed.y = 0;
-    const speed = horizontalSpeed.length();
-
-    // Determine which animation to play based on state and speed
-    if (this.isGrounded && speed > this.moveSpeedThreshold) {
-      this._characters.fadeToAction('forward', this.transitionTime);
-    } else if (this.isGrounded) {
-      this._characters.fadeToAction('idle', this.transitionTime);
-    } else if (this.velocity.y > 0) {
-      this._characters.fadeToAction('jump', this.transitionTime);
-    } else if (this.velocity.y < -this.fallSpeedThreshold) {
-      this._characters.fadeToAction('fall', this.transitionTime);
-    }
   }
 
   /**
@@ -272,12 +248,11 @@ class MouseDragCameraRotationControls extends PhysicsControls {
    * @param delta - Time delta for consistent updates.
    */
   update(delta: number) {
-    this.updateControls(delta);
-
     super.update(delta);
 
     this.updateCamera();
-    this.updateAnimation(delta);
+    this.updateSync();
+    this.updateControls(delta);
   }
 
   /**
@@ -286,11 +261,11 @@ class MouseDragCameraRotationControls extends PhysicsControls {
   connect() {
     super.connect();
 
-    document.addEventListener('keydown', this.onKeyDown);
-    document.addEventListener('keyup', this.onKeyUp);
-    this.domElement?.addEventListener('mousedown', this.onMouseDown);
-    document.addEventListener('mouseup', this.onMouseUp);
-    this.domElement?.addEventListener('mousemove', this.onMouseMove);
+    document.addEventListener('keydown', this.onKeyDownHandler);
+    document.addEventListener('keyup', this.onKeyUpHandler);
+    this.domElement?.addEventListener('mousedown', this.onMouseDownHandler);
+    document.addEventListener('mouseup', this.onMouseUpHandler);
+    this.domElement?.addEventListener('mousemove', this.onMouseMoveHandler);
   }
 
   /**
@@ -299,29 +274,64 @@ class MouseDragCameraRotationControls extends PhysicsControls {
   disconnect() {
     super.disconnect();
 
-    document.removeEventListener('keydown', this.onKeyDown);
-    document.removeEventListener('keyup', this.onKeyUp);
-    this.domElement?.removeEventListener('mousedown', this.onMouseDown);
-    document.removeEventListener('mouseup', this.onMouseUp);
-    this.domElement?.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('keydown', this.onKeyDownHandler);
+    document.removeEventListener('keyup', this.onKeyUpHandler);
+    this.domElement?.removeEventListener('mousedown', this.onMouseDownHandler);
+    document.removeEventListener('mouseup', this.onMouseUpHandler);
+    this.domElement?.removeEventListener('mousemove', this.onMouseMoveHandler);
   }
 
   dispose() {
     this.disconnect();
 
     super.dispose();
-    this._characters.dispose();
   }
 
-  /** Handles keydown events to update key states. */
-  private onKeyDown = (event: KeyboardEvent) => {
-    this.keyStates[event.key] = true;
-  };
+  /** Handles keydown events, updating the key state. */
+  private onKeyDown(event: KeyboardEvent) {
+    if (this.actionKeys.forward?.some(key => event.key === key)) {
+      keyStates.forward = true;
+    }
 
-  /** Handles keyup events to update key states. */
-  private onKeyUp = (event: KeyboardEvent) => {
-    this.keyStates[event.key] = false;
-  };
+    if (this.actionKeys.backward?.some(key => event.key === key)) {
+      keyStates.backward = true;
+    }
+
+    if (this.actionKeys.leftward?.some(key => event.key === key)) {
+      keyStates.leftward = true;
+    }
+
+    if (this.actionKeys.rightward?.some(key => event.key === key)) {
+      keyStates.rightward = true;
+    }
+
+    if (this.actionKeys.jump?.some(key => event.key === key)) {
+      keyStates.jump = true;
+    }
+  }
+
+  /** Handles keyup events, updating the key state. */
+  private onKeyUp(event: KeyboardEvent) {
+    if (this.actionKeys.forward?.some(key => event.key === key)) {
+      keyStates.forward = false;
+    }
+
+    if (this.actionKeys.backward?.some(key => event.key === key)) {
+      keyStates.backward = false;
+    }
+
+    if (this.actionKeys.leftward?.some(key => event.key === key)) {
+      keyStates.leftward = false;
+    }
+
+    if (this.actionKeys.rightward?.some(key => event.key === key)) {
+      keyStates.rightward = false;
+    }
+
+    if (this.actionKeys.jump?.some(key => event.key === key)) {
+      keyStates.jump = false;
+    }
+  }
 
   /** Handles mousedown events to set _isMouseDown flag. */
   private onMouseDown = () => {
@@ -337,11 +347,11 @@ class MouseDragCameraRotationControls extends PhysicsControls {
   private onMouseMove = (event: MouseEvent) => {
     if (!this._isMouseDown) return;
 
-    this._cameraTheta += (event.movementX * this.rotateSpeed) / 100;
-    this._cameraPhi -= (event.movementY * this.rotateSpeed) / 100;
+    this._spherical.theta -= (event.movementX * this.rotateSpeed) / 100;
+    this._spherical.phi -= (event.movementY * this.rotateSpeed) / 100;
 
     // Clamp the camera angles to prevent flipping
-    this._cameraPhi = Math.max(0.01, Math.min(Math.PI - 0.01, this._cameraPhi));
+    this._spherical.phi = Math.max(0.01, Math.min(Math.PI - 0.01, this._spherical.phi));
   };
 }
 
