@@ -61,7 +61,7 @@ class FirstPersonPointerLockControls extends PhysicsControls {
 
   // Handlers for pointer lock events.
   private onMouseMoveHandler: (event: MouseEvent) => void;
-  private onPointerLockChangeHandler: () => void;
+  private onMouseDownHandler: (event: MouseEvent) => void;
 
   /**
    * Constructs a new FirstPersonPointerLockControls instance.
@@ -99,7 +99,7 @@ class FirstPersonPointerLockControls extends PhysicsControls {
 
     // Bind event handlers.
     this.onMouseMoveHandler = this.onMouseMove.bind(this);
-    this.onPointerLockChangeHandler = this.onPointerLockChange.bind(this);
+    this.onMouseDownHandler = this.onMouseDown.bind(this);
 
     // Connect controls to pointer lock events.
     this.connect();
@@ -118,7 +118,7 @@ class FirstPersonPointerLockControls extends PhysicsControls {
   }
 
   /**
-   * Gets the side (right) direction vector based on the camera's orientation.
+   * Gets the side (right) direction vector based on the object's orientation.
    * @returns Normalized side vector.
    */
   private getSideVector(): Vector3 {
@@ -135,10 +135,6 @@ class FirstPersonPointerLockControls extends PhysicsControls {
    */
   private updateControls(delta: number) {
     const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
-
-    // Apply pitch and yaw for rotation.
-    this.object.rotation.y = this.yaw;
-    this.object.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
 
     // Move forward.
     if (keyStates.forward) {
@@ -184,12 +180,11 @@ class FirstPersonPointerLockControls extends PhysicsControls {
   connect() {
     super.connect();
 
-    this.domElement?.addEventListener('click', this.requestPointerLock.bind(this));
+    this.domElement?.addEventListener('click', this.onMouseDownHandler);
 
     document.addEventListener('keydown', this.onKeyDownHandler);
     document.addEventListener('keyup', this.onKeyUpHandler);
     document.addEventListener('mousemove', this.onMouseMoveHandler);
-    document.addEventListener('pointerlockchange', this.onPointerLockChangeHandler);
   }
 
   /**
@@ -198,12 +193,11 @@ class FirstPersonPointerLockControls extends PhysicsControls {
   disconnect() {
     super.disconnect();
 
-    this.domElement?.removeEventListener('click', this.requestPointerLock.bind(this));
+    this.domElement?.removeEventListener('click', this.onMouseDownHandler);
 
-    document.addEventListener('keydown', this.onKeyDownHandler);
-    document.addEventListener('keyup', this.onKeyUpHandler);
+    document.removeEventListener('keydown', this.onKeyDownHandler);
+    document.removeEventListener('keyup', this.onKeyUpHandler);
     document.removeEventListener('mousemove', this.onMouseMoveHandler);
-    document.removeEventListener('pointerlockchange', this.onPointerLockChangeHandler);
   }
 
   /**
@@ -213,26 +207,6 @@ class FirstPersonPointerLockControls extends PhysicsControls {
     this.disconnect();
 
     super.dispose();
-  }
-
-  /**
-   * Handles mouse movement events, adjusting pitch and yaw based on delta movements.
-   * @param event - The mouse movement event.
-   */
-  private onMouseMove(event: MouseEvent) {
-    if (document.pointerLockElement === this.domElement) {
-      this.yaw -= event.movementX * this.rotateSpeed;
-      this.pitch -= event.movementY * this.rotateSpeed;
-    }
-  }
-
-  /**
-   * Handles pointer lock change events.
-   */
-  private onPointerLockChange() {
-    if (document.pointerLockElement !== this.domElement) {
-      this.velocity.set(0, 0, 0); // Stop movement when pointer lock is lost.
-    }
   }
 
   /** Handles keydown events, updating the key state. */
@@ -282,9 +256,20 @@ class FirstPersonPointerLockControls extends PhysicsControls {
   }
 
   /**
+   * Handles mouse movement events, adjusting pitch and yaw based on delta movements.
+   * @param event - The mouse movement event.
+   */
+  private onMouseMove(event: MouseEvent) {
+    if (document.pointerLockElement === this.domElement) {
+      this.object.rotation.y -= event.movementX * this.rotateSpeed;
+      this.object.rotation.x -= Math.max(-Math.PI / 2, Math.min(Math.PI / 2, event.movementY * this.rotateSpeed));
+    }
+  }
+
+  /**
    * Requests pointer lock on the DOM element.
    */
-  private requestPointerLock() {
+  private onMouseDown() {
     this.domElement?.requestPointerLock();
   }
 }
