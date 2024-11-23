@@ -193,8 +193,7 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
 
     // Accumulate movement vectors based on key states
     if (characterKeyStates.leftward) {
-      const sideVector = this.getSideVector();
-      movement.add(sideVector.multiplyScalar(-1));
+      movement.add(this.getSideVector().multiplyScalar(-1));
     }
 
     if (characterKeyStates.rightward) {
@@ -221,9 +220,18 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
       this.velocity.y = this.jumpForce;
     }
   }
-
-  private updateCameraRotation(delta: number) {
+  /**
+   * Updates the camera's position and orientation based on the object's position and keyboard input.
+   */
+  private updateCamera(delta: number) {
     const rotationSpeed = this.rotateSpeed * delta;
+
+    this.object.updateMatrixWorld();
+
+    const lookAtPosition = this._cameraLookAtPosition.copy(this.object.position).add(this._cameraLookAtOffset);
+    this.camera.position.setFromSpherical(this._spherical).add(lookAtPosition);
+
+    this.camera.lookAt(lookAtPosition);
 
     if (cameraKeyStates.cameraLeft) {
       this._spherical.theta -= rotationSpeed;
@@ -242,55 +250,22 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
     }
   }
 
-  /**
-   * Updates the camera's position and orientation based on the object's position and mouse input.
-   */
-  private updateCamera() {
-    const fixedPosition = this.object.position.clone().add(this._cameraPositionOffset);
-
-    const applyFixedCamera = () => {
-      // Apply fixed position and orientation for 'always' and 'move' (when moving)
-      this.camera.position.copy(fixedPosition);
-      this.camera.lookAt(this.object.position);
-
-      const direction = fixedPosition.clone().sub(this.object.position); // Vector from character to camera
-      this._spherical.setFromVector3(direction);
-    };
-
+  private updateSync() {
     if (this.axisSync === 'always') {
-      // Always keep the camera fixed behind the character
-      applyFixedCamera();
+      this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
       return;
     }
 
-    if (this.axisSync === 'move') {
-      // Check if the character is moving
-      const isMoving =
-        characterKeyStates.forward ||
+    if (
+      this.axisSync === 'move' &&
+      (characterKeyStates.forward ||
         characterKeyStates.backward ||
         characterKeyStates.leftward ||
-        characterKeyStates.rightward;
-
-      if (isMoving) {
-        applyFixedCamera(); // Perform the same behavior as 'always'
-      } else {
-        this.object.updateMatrixWorld();
-
-        const lookAtPosition = this._cameraLookAtPosition.copy(this.object.position);
-        this.camera.position.setFromSpherical(this._spherical).add(lookAtPosition);
-
-        this.camera.lookAt(lookAtPosition); // Ensure the camera faces the character
-      }
+        characterKeyStates.rightward)
+    ) {
+      this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
       return;
     }
-
-    // Default camera update logic for 'never'
-    this.object.updateMatrixWorld();
-
-    const lookAtPosition = this._cameraLookAtPosition.copy(this.object.position).add(this._cameraLookAtOffset);
-    this.camera.position.setFromSpherical(this._spherical).add(lookAtPosition);
-
-    this.camera.lookAt(lookAtPosition); // Ensure the camera faces the character
   }
 
   /**
@@ -301,8 +276,8 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
     super.update(delta);
 
     this.updateCharacterControls(delta);
-    this.updateCameraRotation(delta);
-    this.updateCamera();
+    this.updateCamera(delta);
+    this.updateSync();
   }
 
   private onKeyDown(event: KeyboardEvent) {
@@ -310,7 +285,6 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
     for (const [action, keys] of Object.entries(this.actionKeys.character)) {
       if (keys?.includes(event.key)) {
         characterKeyStates[action as CharacterActions] = true;
-        console.log(`${action} key pressed`);
       }
     }
 
