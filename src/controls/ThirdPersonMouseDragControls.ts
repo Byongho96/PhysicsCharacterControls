@@ -21,6 +21,7 @@ export type CameraOptions = {
   axisSync?: 'always' | 'move' | 'never';
   posOffset: Vector3;
   lookAtOffset: Vector3;
+  cameraLerpFactor?: number;
 };
 
 /**
@@ -53,6 +54,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
   private _cameraPositionOffset: Vector3;
   private _cameraLookAtOffset: Vector3;
   private _spherical: Spherical;
+  private cameraLerpFactor: number = 0;
   axisSync: 'always' | 'move' | 'never';
 
   actionKeys: ActionKeys;
@@ -69,6 +71,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
   private _objectWorldDirection: Vector3 = new Vector3();
   private _accumulatedDirection: Vector3 = new Vector3();
   private _cameraLookAtPosition: Vector3 = new Vector3();
+  private _cameraLerpPosition: Vector3 = new Vector3();
 
   // Handlers for keyboard events.
   private onKeyDownHandler: (event: KeyboardEvent) => void;
@@ -106,6 +109,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
     this._cameraPositionOffset = cameraOptions.posOffset;
     this._cameraLookAtOffset = cameraOptions.lookAtOffset;
     this._spherical = new Spherical();
+    this.cameraLerpFactor = cameraOptions.cameraLerpFactor ?? 0;
     this.updateCameraInfo();
 
     this.axisSync = cameraOptions.axisSync ?? 'move';
@@ -237,9 +241,17 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
   private updateCamera() {
     this.object.updateMatrixWorld();
 
-    const lookAtPosition = this._cameraLookAtPosition.copy(this.object.position).add(this._cameraLookAtOffset);
-    this.camera.position.setFromSpherical(this._spherical).add(lookAtPosition);
+    const targetVector = this._cameraLerpPosition.addVectors(this.object.position, this._cameraLookAtOffset);
+    const lookAtPosition = this._cameraLookAtPosition;
 
+    if (this.cameraLerpFactor > 0) {
+      const distance = lookAtPosition.distanceTo(targetVector);
+      lookAtPosition.lerp(targetVector, this.cameraLerpFactor * distance);
+    } else {
+      lookAtPosition.copy(targetVector);
+    }
+
+    this.camera.position.setFromSpherical(this._spherical).add(lookAtPosition);
     this.camera.lookAt(lookAtPosition);
   }
 

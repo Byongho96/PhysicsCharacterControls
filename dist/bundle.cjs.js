@@ -883,13 +883,15 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
      * @param physicsOptions - Physics options.
      */
     constructor(object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions = {}, physicsOptions = {}) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f;
         super(object, domElement, worldObject, animationOptions, physicsOptions);
+        this.cameraLerpFactor = 0;
         this._isMouseDown = false;
         // Temporary vectors for calculations
         this._objectWorldDirection = new three.Vector3();
         this._accumulatedDirection = new three.Vector3();
         this._cameraLookAtPosition = new three.Vector3();
+        this._cameraLerpPosition = new three.Vector3();
         /** Handles mousedown events to set _isMouseDown flag. */
         this.onMouseDown = () => {
             this._isMouseDown = true;
@@ -912,13 +914,14 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
         this._cameraPositionOffset = cameraOptions.posOffset;
         this._cameraLookAtOffset = cameraOptions.lookAtOffset;
         this._spherical = new three.Spherical();
+        this.cameraLerpFactor = (_a = cameraOptions.cameraLerpFactor) !== null && _a !== void 0 ? _a : 0;
         this.updateCameraInfo();
-        this.axisSync = (_a = cameraOptions.axisSync) !== null && _a !== void 0 ? _a : 'move';
+        this.axisSync = (_b = cameraOptions.axisSync) !== null && _b !== void 0 ? _b : 'move';
         // Set physics options with default values
-        this.jumpForce = (_b = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.jumpForce) !== null && _b !== void 0 ? _b : 15;
-        this.groundMoveSpeed = (_c = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.groundMoveSpeed) !== null && _c !== void 0 ? _c : 25;
-        this.floatMoveSpeed = (_d = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.floatMoveSpeed) !== null && _d !== void 0 ? _d : 8;
-        this.rotateSpeed = (_e = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _e !== void 0 ? _e : 1;
+        this.jumpForce = (_c = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.jumpForce) !== null && _c !== void 0 ? _c : 15;
+        this.groundMoveSpeed = (_d = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.groundMoveSpeed) !== null && _d !== void 0 ? _d : 25;
+        this.floatMoveSpeed = (_e = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.floatMoveSpeed) !== null && _e !== void 0 ? _e : 8;
+        this.rotateSpeed = (_f = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _f !== void 0 ? _f : 1;
         // Bind key event handlers.
         this.onKeyDownHandler = this.onKeyDown.bind(this);
         this.onKeyUpHandler = this.onKeyUp.bind(this);
@@ -1018,7 +1021,15 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
      */
     updateCamera() {
         this.object.updateMatrixWorld();
-        const lookAtPosition = this._cameraLookAtPosition.copy(this.object.position).add(this._cameraLookAtOffset);
+        const targetVector = this._cameraLerpPosition.addVectors(this.object.position, this._cameraLookAtOffset);
+        const lookAtPosition = this._cameraLookAtPosition;
+        if (this.cameraLerpFactor > 0) {
+            const distance = lookAtPosition.distanceTo(targetVector);
+            lookAtPosition.lerp(targetVector, this.cameraLerpFactor * distance);
+        }
+        else {
+            lookAtPosition.copy(targetVector);
+        }
         this.camera.position.setFromSpherical(this._spherical).add(lookAtPosition);
         this.camera.lookAt(lookAtPosition);
     }

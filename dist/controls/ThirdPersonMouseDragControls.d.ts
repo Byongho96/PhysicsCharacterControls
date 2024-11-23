@@ -18,6 +18,7 @@ export type CameraOptions = {
     axisSync?: 'always' | 'move' | 'never';
     posOffset: Vector3;
     lookAtOffset: Vector3;
+    cameraLerpFactor?: number;
 };
 /**
  * Extended physics options specific to mouse drag controls.
@@ -36,6 +37,7 @@ declare class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
     private _cameraPositionOffset;
     private _cameraLookAtOffset;
     private _spherical;
+    private cameraLerpFactor;
     axisSync: 'always' | 'move' | 'never';
     actionKeys: ActionKeys;
     private _isMouseDown;
@@ -46,6 +48,7 @@ declare class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
     private _objectWorldDirection;
     private _accumulatedDirection;
     private _cameraLookAtPosition;
+    private _cameraLerpPosition;
     private onKeyDownHandler;
     private onKeyUpHandler;
     private onMouseDownHandler;
