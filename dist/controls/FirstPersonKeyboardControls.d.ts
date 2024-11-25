@@ -39,8 +39,6 @@ declare class FirstPersonKeyboardControls extends PhysicsControls {
      * @param domElement - The HTML element for event listeners (optional).
      * @param worldObject - The world object used for physics collision.
      * @param actionKeys - Key mappings for actions.
-     * @param cameraOptions - Configuration for the camera (optional).
-     * @param animationOptions - Configuration for animations (optional).
      * @param physicsOptions - Physics configuration options (optional).
      */
     constructor(object: Object3D, domElement: HTMLElement | null, worldObject: Object3D, actionKeys: ActionKeys, physicsOptions?: KeyboardPhysicsOptions);
