@@ -46,10 +46,6 @@ class FirstPersonPointerLockControls extends PhysicsControls {
   floatMoveSpeed: number;
   rotateSpeed: number;
 
-  // Mouse movement accumulators
-  private yaw: number = 0;
-  private pitch: number = 0;
-
   // Temporary vectors for calculations
   private _objectWorldDirection: Vector3 = new Vector3();
 
