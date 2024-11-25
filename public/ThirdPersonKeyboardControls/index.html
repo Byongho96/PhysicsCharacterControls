@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Physics Character Controls - Supported by Three.js</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <link type="text/css" rel="stylesheet" href="main.css" />
+  </head>
+  <body>
+    <div id="info">
+      Physics character controls demo <br />
+      WASD to move, Arrow Keys to rotate and SPACE to jump
+    </div>
+    <div id="container"></div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "physics-character-controls": "../../dist/bundle.esm.js",
+          "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from 'three';
+
+      import Stats from 'three/addons/libs/stats.module.js';
+      import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+      import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+      import { ThirdPersonKeyboardControls } from 'physics-character-controls';
+      import { PhysicsControlsHelper } from 'physics-character-controls';
+
+      const container = document.getElementById('container');
+
+      const gui = new GUI({ width: 200 });
+
+      const clock = new THREE.Clock();
+
+      const gltfLoader = new GLTFLoader();
+
+      let controls;
+      let helpers;
+
+      Promise.all([
+        gltfLoader.loadAsync('../assets/models/collision-world.glb'),
+        gltfLoader.loadAsync('../assets/models/x_bot.glb'),
+        gltfLoader.loadAsync('../assets/animations/idle.glb'),
+        gltfLoader.loadAsync('../assets/animations/running.glb'),
+        gltfLoader.loadAsync('../assets/animations/jumping.glb'),
+        gltfLoader.loadAsync('../assets/animations/falling.glb'),
+      ]).then(([world, character, idle, walking, jumping, falling]) => {
+        scene.add(world.scene);
+        world.scene.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        scene.add(character.scene);
+        character.scene.position.set(0, 0, 0);
+        character.scene.scale.set(0.7, 0.7, 0.7);
+        character.scene.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        controls = new ThirdPersonKeyboardControls(
+          character.scene,
+          renderer.domElement,
+          world.scene,
+          camera,
+          {
+            forward: ['w'],
+            backward: ['s'],
+            leftward: ['a'],
+            rightward: ['d'],
+            jump: [' '],
+            cameraUp: ['ArrowUp'],
+            cameraDown: ['ArrowDown'],
+            cameraLeft: ['ArrowLeft'],
+            cameraRight: ['ArrowRight'],
+          },
+          {
+            axisSync: 'move',
+            posOffset: new THREE.Vector3(0, 2, -2),
+            lookAtOffset: new THREE.Vector3(0, 1, 0),
+          },
+          {
+            animationClips: {
+              idle: idle.animations[0],
+              forward: walking.animations[0],
+              jump: jumping.animations[0],
+              fall: falling.animations[0],
+            },
+          },
+          {
+            boundary: {
+              resetPoint: new THREE.Vector3(0, 0, 0),
+              x: {
+                min: -20,
+                max: 30,
+              },
+              y: {
+                min: -10,
+                max: 20,
+              },
+              z: {
+                min: -20,
+                max: 30,
+              },
+            },
+          },
+        );
+
+        helpers = new PhysicsControlsHelper(controls, 0xffffff);
+        helpers.visible = false;
+        scene.add(helpers);
+
+        // GUI - Debug
+        const folder1 = gui.addFolder('Debug');
+        folder1.add(helpers, 'visible').name('debug').listen();
+
+        // GUI - Physics
+        const folder2 = gui.addFolder('Physics');
+        folder2.add(controls, 'groundMoveSpeed', 0, 40).name('ground move speed').listen();
+        folder2.add(controls, 'floatMoveSpeed', 0, 20).name('float move speed').listen();
+        folder2.add(controls, 'rotateSpeed', 0, 2).name('rotate speed').listen();
+        folder2.add(controls, 'jumpForce', 0, 30).name('jump force').listen();
+        folder2.add(controls, 'gravity', 0, 50).name('gravity').listen();
+        folder2.add(controls, 'maxFallSpeed', 0, 40).name('max fall speed').listen();
+        folder2.add(controls, 'movementResistance', 0, 10).name('resistance').listen();
+
+        // GUI - Animation
+        const folder3 = gui.addFolder('Animation');
+        folder3.add(controls, 'moveSpeedThreshold', 1, 10).name('move speed threshold').listen();
+        folder3.add(controls, 'fallSpeedThreshold', 1, 30).name('fall speed threshold').listen();
+        folder3.add(controls, 'transitionTime', 0, 1).name('transition time').listen();
+
+        // GUI - Camera
+        const folder4 = gui.addFolder('Camera');
+        const cameraPosition = folder4.addFolder('Position');
+        cameraPosition.add(controls.cameraPosOffset, 'x', -10, 10).name('x').listen();
+        cameraPosition.add(controls.cameraPosOffset, 'y', -10, 10).name('y').listen();
+        cameraPosition.add(controls.cameraPosOffset, 'z', -10, 10).name('z').listen();
+        const cameraLookAt = folder4.addFolder('LookAt');
+        cameraLookAt.add(controls.cameraLookAtOffset, 'x', -10, 10).name('x').listen();
+        cameraLookAt.add(controls.cameraLookAtOffset, 'y', -10, 10).name('y').listen();
+        cameraLookAt.add(controls.cameraLookAtOffset, 'z', -10, 10).name('z').listen();
+      });
+
+      // Scene
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x88ccee);
+
+      // Camera
+      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
+      camera.rotation.order = 'YXZ';
+
+      // Light
+      const fillLight1 = new THREE.HemisphereLight(0x8dc1de, 0x00668d, 1.5);
+      fillLight1.position.set(2, 1, 1);
+      scene.add(fillLight1);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
+      directionalLight.position.set(-5, 25, -1);
+      directionalLight.castShadow = true;
+      directionalLight.shadow.camera.near = 0.01;
+      directionalLight.shadow.camera.far = 500;
+      directionalLight.shadow.camera.right = 30;
+      directionalLight.shadow.camera.left = -30;
+      directionalLight.shadow.camera.top = 30;
+      directionalLight.shadow.camera.bottom = -30;
+      directionalLight.shadow.mapSize.width = 1024;
+      directionalLight.shadow.mapSize.height = 1024;
+      directionalLight.shadow.radius = 4;
+      directionalLight.shadow.bias = -0.00006;
+      scene.add(directionalLight);
+
+      // Renderer
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setAnimationLoop(animate);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      container.appendChild(renderer.domElement);
+
+      // Stats
+      const stats = new Stats();
+      stats.domElement.style.position = 'absolute';
+      stats.domElement.style.top = '0px';
+      container.appendChild(stats.domElement);
+
+      function animate() {
+        const delta = Math.min(0.05, clock.getDelta());
+
+        controls && controls.update(delta);
+
+        helpers && helpers.update();
+
+        renderer.render(scene, camera);
+
+        stats.update();
+      }
+
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      window.addEventListener('resize', onWindowResize);
+
+      // Dispose function
+      function dispose() {
+        renderer.setAnimationLoop(null);
+
+        window.removeEventListener('resize', onWindowResize);
+
+        controls && controls.disconnect();
+        helpers && helpers.dispose();
+        renderer.dispose();
+
+        // Dispose of scene objects
+        scene.traverse(object => {
+          if (object.isMesh) {
+            object.geometry.dispose();
+
+            if (Array.isArray(object.material)) {
+              object.material.forEach(material => material.dispose());
+            } else if (object.material) {
+              object.material.dispose();
+            }
+          }
+        });
+
+        // Remove renderer DOM element
+        if (renderer.domElement && renderer.domElement.parentNode) {
+          renderer.domElement.parentNode.removeChild(renderer.domElement);
+        }
+      }
+
+      window.addEventListener('beforeunload', dispose);
+    </script>
+  </body>
+</html>
