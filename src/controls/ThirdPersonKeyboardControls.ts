@@ -3,21 +3,24 @@ import { PhysicsOptions } from './base/PhysicsControls';
 import PhysicsCharacterControls, { AnimationOptions } from './base/PhysicsCharacterControls';
 
 /**
- * Possible actions for character movement.
+ * Possible actions for character and camera movement.
  */
-type CharacterActions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'jump';
+type Actions =
+  | 'forward'
+  | 'backward'
+  | 'leftward'
+  | 'rightward'
+  | 'jump'
+  | 'cameraUp'
+  | 'cameraDown'
+  | 'cameraLeft'
+  | 'cameraRight';
 
 /**
- * Possible actions for camera control.
- */
-type CameraActions = 'cameraUp' | 'cameraDown' | 'cameraLeft' | 'cameraRight';
-
-/**
- * Configuration for key mappings to character and camera actions.
+ * Configuration for key mappings to actions.
  */
 type ActionKeys = {
-  character: { [K in CharacterActions]?: string[] };
-  camera: { [K in CameraActions]?: string[] };
+  [K in Actions]?: string[]; // Mapping each action to possible key bindings
 };
 
 /**
@@ -40,20 +43,14 @@ export type KeyboardPhysicsOptions = PhysicsOptions & {
 };
 
 /**
- * Global object to track the current state of pressed keys for character actions.
+ * Global object to track the current state of pressed keys.
  */
-const characterKeyStates: Record<CharacterActions, boolean> = {
+const keyStates: Record<Actions, boolean> = {
   forward: false,
   backward: false,
   leftward: false,
   rightward: false,
   jump: false,
-};
-
-/**
- * Global object to track the current state of pressed keys for camera actions.
- */
-const cameraKeyStates: Record<CameraActions, boolean> = {
   cameraUp: false,
   cameraDown: false,
   cameraLeft: false,
@@ -117,7 +114,7 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
     this._spherical = new Spherical();
     this.updateCameraInfo();
 
-    this.axisSync = cameraOptions.axisSync ?? 'never';
+    this.axisSync = cameraOptions.axisSync ?? 'move';
 
     this.jumpForce = physicsOptions?.jumpForce ?? 15;
     this.groundMoveSpeed = physicsOptions?.groundMoveSpeed ?? 25;
@@ -185,26 +182,26 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
    * Updates the object's velocity based on keyboard input.
    * @param delta - Time delta for frame-independent movement.
    */
-  private updateCharacterControls(delta: number) {
+  private updateControls(delta: number) {
     const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
 
     // Reset movement vector
     const movement = this._accumulatedDirection.set(0, 0, 0);
 
     // Accumulate movement vectors based on key states
-    if (characterKeyStates.leftward) {
+    if (keyStates.leftward) {
       movement.add(this.getSideVector().multiplyScalar(-1));
     }
 
-    if (characterKeyStates.rightward) {
+    if (keyStates.rightward) {
       movement.add(this.getSideVector());
     }
 
-    if (characterKeyStates.backward) {
+    if (keyStates.backward) {
       movement.add(this.getForwardVector().multiplyScalar(-1));
     }
 
-    if (characterKeyStates.forward) {
+    if (keyStates.forward) {
       movement.add(this.getForwardVector());
     }
 
@@ -216,7 +213,7 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
     }
 
     // Jump if grounded.
-    if (characterKeyStates.jump && this.isGrounded) {
+    if (keyStates.jump && this.isGrounded) {
       this.velocity.y = this.jumpForce;
     }
   }
@@ -233,19 +230,19 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
 
     this.camera.lookAt(lookAtPosition);
 
-    if (cameraKeyStates.cameraLeft) {
+    if (keyStates.cameraLeft) {
       this._spherical.theta -= rotationSpeed;
     }
 
-    if (cameraKeyStates.cameraRight) {
+    if (keyStates.cameraRight) {
       this._spherical.theta += rotationSpeed;
     }
 
-    if (cameraKeyStates.cameraUp) {
+    if (keyStates.cameraUp) {
       this._spherical.phi = Math.max(0.01, this._spherical.phi - rotationSpeed);
     }
 
-    if (cameraKeyStates.cameraDown) {
+    if (keyStates.cameraDown) {
       this._spherical.phi = Math.min(Math.PI - 0.01, this._spherical.phi + rotationSpeed);
     }
   }
@@ -258,10 +255,7 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
 
     if (
       this.axisSync === 'move' &&
-      (characterKeyStates.forward ||
-        characterKeyStates.backward ||
-        characterKeyStates.leftward ||
-        characterKeyStates.rightward)
+      (keyStates.forward || keyStates.backward || keyStates.leftward || keyStates.rightward)
     ) {
       this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
       return;
@@ -274,40 +268,25 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
    */
   update(delta: number) {
     super.update(delta);
-
-    this.updateCharacterControls(delta);
     this.updateCamera(delta);
     this.updateSync();
+    this.updateControls(delta);
   }
 
+  /** Handles keydown events, updating the key state. */
   private onKeyDown(event: KeyboardEvent) {
-    // Update character key states
-    for (const [action, keys] of Object.entries(this.actionKeys.character)) {
+    for (const [action, keys] of Object.entries(this.actionKeys)) {
       if (keys?.includes(event.key)) {
-        characterKeyStates[action as CharacterActions] = true;
-      }
-    }
-
-    // Update camera key states
-    for (const [action, keys] of Object.entries(this.actionKeys.camera)) {
-      if (keys?.includes(event.key)) {
-        cameraKeyStates[action as CameraActions] = true;
+        keyStates[action as Actions] = true;
       }
     }
   }
 
+  /** Handles keyup events, updating the key state. */
   private onKeyUp(event: KeyboardEvent) {
-    // Reset character key states
-    for (const [action, keys] of Object.entries(this.actionKeys.character)) {
+    for (const [action, keys] of Object.entries(this.actionKeys)) {
       if (keys?.includes(event.key)) {
-        characterKeyStates[action as CharacterActions] = false;
-      }
-    }
-
-    // Reset camera key states
-    for (const [action, keys] of Object.entries(this.actionKeys.camera)) {
-      if (keys?.includes(event.key)) {
-        cameraKeyStates[action as CameraActions] = false;
+        keyStates[action as Actions] = false;
       }
     }
   }
