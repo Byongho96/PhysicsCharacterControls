@@ -760,7 +760,7 @@ class FirstPersonPointerLockControls extends PhysicsControls {
         this.jumpForce = (_b = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.jumpForce) !== null && _b !== void 0 ? _b : 15;
         this.groundMoveSpeed = (_c = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.groundMoveSpeed) !== null && _c !== void 0 ? _c : 25;
         this.floatMoveSpeed = (_d = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.floatMoveSpeed) !== null && _d !== void 0 ? _d : 8;
-        this.rotateSpeed = (_e = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _e !== void 0 ? _e : 0.02;
+        this.rotateSpeed = (_e = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _e !== void 0 ? _e : 0.002;
         // Bind key event handlers.
         this.onKeyDownHandler = this.onKeyDown.bind(this);
         this.onKeyUpHandler = this.onKeyUp.bind(this);
@@ -823,9 +823,9 @@ class FirstPersonPointerLockControls extends PhysicsControls {
      * @param delta - The time delta for consistent updates.
      */
     update(delta) {
-        this.updateControls(delta);
         super.update(delta);
-        this.object.translateY(this.eyeHeight);
+        this.object.position.y += this.eyeHeight;
+        this.updateControls(delta);
     }
     /**
      * Connects the pointer lock controls by adding event listeners.
@@ -895,13 +895,14 @@ class FirstPersonPointerLockControls extends PhysicsControls {
         }
     }
     /**
-     * Handles mouse movement events, adjusting pitch and yaw based on delta movements.
      * @param event - The mouse movement event.
      */
+    /** Handles mousemove events to update camera angles with separate clamping for upward and downward movements. */
     onMouseMove(event) {
         if (document.pointerLockElement === this.domElement) {
             this.object.rotation.y -= event.movementX * this.rotateSpeed;
-            this.object.rotation.x -= Math.max(-Math.PI / 2, Math.min(Math.PI / 2, event.movementY * this.rotateSpeed));
+            this.object.rotation.x -= event.movementY * this.rotateSpeed;
+            this.object.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.object.rotation.x));
         }
     }
     /**

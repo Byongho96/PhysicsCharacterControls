@@ -81,9 +81,9 @@ declare class FirstPersonPointerLockControls extends PhysicsControls {
     /** Handles keyup events, updating the key state. */
     private onKeyUp;
     /**
-     * Handles mouse movement events, adjusting pitch and yaw based on delta movements.
      * @param event - The mouse movement event.
      */
+    /** Handles mousemove events to update camera angles with separate clamping for upward and downward movements. */
     private onMouseMove;
     /**
      * Requests pointer lock on the DOM element.

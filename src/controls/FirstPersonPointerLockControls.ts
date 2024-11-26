@@ -87,7 +87,7 @@ class FirstPersonPointerLockControls extends PhysicsControls {
     this.jumpForce = physicsOptions?.jumpForce ?? 15;
     this.groundMoveSpeed = physicsOptions?.groundMoveSpeed ?? 25;
     this.floatMoveSpeed = physicsOptions?.floatMoveSpeed ?? 8;
-    this.rotateSpeed = physicsOptions?.rotateSpeed ?? 0.02;
+    this.rotateSpeed = physicsOptions?.rotateSpeed ?? 0.002;
 
     // Bind key event handlers.
     this.onKeyDownHandler = this.onKeyDown.bind(this);
@@ -163,11 +163,11 @@ class FirstPersonPointerLockControls extends PhysicsControls {
    * @param delta - The time delta for consistent updates.
    */
   update(delta: number) {
-    this.updateControls(delta);
-
     super.update(delta);
 
-    this.object.translateY(this.eyeHeight);
+    this.object.position.y += this.eyeHeight;
+
+    this.updateControls(delta);
   }
 
   /**
@@ -252,13 +252,16 @@ class FirstPersonPointerLockControls extends PhysicsControls {
   }
 
   /**
-   * Handles mouse movement events, adjusting pitch and yaw based on delta movements.
    * @param event - The mouse movement event.
    */
+
+  /** Handles mousemove events to update camera angles with separate clamping for upward and downward movements. */
   private onMouseMove(event: MouseEvent) {
     if (document.pointerLockElement === this.domElement) {
       this.object.rotation.y -= event.movementX * this.rotateSpeed;
-      this.object.rotation.x -= Math.max(-Math.PI / 2, Math.min(Math.PI / 2, event.movementY * this.rotateSpeed));
+      this.object.rotation.x -= event.movementY * this.rotateSpeed;
+
+      this.object.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.object.rotation.x));
     }
   }
 
