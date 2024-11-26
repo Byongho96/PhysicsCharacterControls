@@ -72,6 +72,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
   private _accumulatedDirection: Vector3 = new Vector3();
   private _cameraLookAtPosition: Vector3 = new Vector3();
   private _cameraLerpPosition: Vector3 = new Vector3();
+  private _forwardDirection: Vector3 = new Vector3();
 
   // Handlers for keyboard events.
   private onKeyDownHandler: (event: KeyboardEvent) => void;
@@ -162,7 +163,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
    * @returns Normalized forward vector.
    */
   private getForwardVector(): Vector3 {
-    this.camera.getWorldDirection(this._objectWorldDirection);
+    this._objectWorldDirection.copy(this._forwardDirection);
     this._objectWorldDirection.y = 0;
     this._objectWorldDirection.normalize();
     return this._objectWorldDirection;
@@ -173,7 +174,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
    * @returns Normalized side vector.
    */
   private getSideVector(): Vector3 {
-    this.camera.getWorldDirection(this._objectWorldDirection);
+    this._objectWorldDirection.copy(this._forwardDirection);
     this._objectWorldDirection.y = 0;
     this._objectWorldDirection.normalize();
     this._objectWorldDirection.cross(this.object.up);
@@ -182,6 +183,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
 
   private updateSync() {
     if (this.axisSync === 'always') {
+      this.camera.getWorldDirection(this._forwardDirection);
       this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
       return;
     }
@@ -190,6 +192,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
       this.axisSync === 'move' &&
       (keyStates.forward || keyStates.backward || keyStates.leftward || keyStates.rightward)
     ) {
+      this.camera.getWorldDirection(this._forwardDirection);
       this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
       return;
     }
