@@ -3,7 +3,7 @@ import { PhysicsControls, PhysicsOptions } from './base/PhysicsControls';
 /**
  * Actions that can be performed via keyboard input.
  */
-type Actions = 'forward' | 'backward' | 'leftTurn' | 'rightTurn' | 'jump';
+type Actions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'turnLeft' | 'turnRight' | 'turnUp' | 'turnDown' | 'jump';
 /**
  * Configuration for key mappings to actions.
  */
@@ -31,6 +31,7 @@ declare class FirstPersonKeyboardControls extends PhysicsControls {
     floatMoveSpeed: number;
     rotateSpeed: number;
     private _objectWorldDirection;
+    private _worldYDirection;
     private onKeyDownHandler;
     private onKeyUpHandler;
     /**
@@ -47,6 +48,11 @@ declare class FirstPersonKeyboardControls extends PhysicsControls {
      * @returns A normalized Vector3 representing the forward _objectWorldDirection.
      */
     private getForwardVector;
+    /**
+     * Gets the side (right) direction vector based on the camera's orientation.
+     * @returns Normalized side vector.
+     */
+    private getSideVector;
     /**
      * Updates movement and rotation based on the current keyboard input.
      * @param delta - The time delta for frame-independent movement.
