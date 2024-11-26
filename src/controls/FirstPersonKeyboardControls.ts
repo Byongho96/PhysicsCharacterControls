@@ -4,7 +4,16 @@ import { PhysicsControls, PhysicsOptions } from './base/PhysicsControls';
 /**
  * Actions that can be performed via keyboard input.
  */
-type Actions = 'forward' | 'backward' | 'leftTurn' | 'rightTurn' | 'jump';
+type Actions =
+  | 'forward'
+  | 'backward'
+  | 'leftward'
+  | 'rightward'
+  | 'turnLeft'
+  | 'turnRight'
+  | 'turnUp'
+  | 'turnDown'
+  | 'jump';
 
 /**
  * Configuration for key mappings to actions.
@@ -30,8 +39,12 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
 const keyStates: Record<Actions, boolean> = {
   forward: false,
   backward: false,
-  leftTurn: false,
-  rightTurn: false,
+  leftward: false,
+  rightward: false,
+  turnUp: false,
+  turnDown: false,
+  turnLeft: false,
+  turnRight: false,
   jump: false,
 };
 
@@ -51,6 +64,7 @@ class FirstPersonKeyboardControls extends PhysicsControls {
 
   // Temporary vectors for calculations
   private _objectWorldDirection: Vector3 = new Vector3();
+  private _worldYDirection: Vector3 = new Vector3(0, 1, 0);
 
   // Handlers for keyboard events.
   private onKeyDownHandler: (event: KeyboardEvent) => void;
@@ -108,30 +122,56 @@ class FirstPersonKeyboardControls extends PhysicsControls {
   }
 
   /**
+   * Gets the side (right) direction vector based on the camera's orientation.
+   * @returns Normalized side vector.
+   */
+  private getSideVector(): Vector3 {
+    this.object.getWorldDirection(this._objectWorldDirection);
+    this._objectWorldDirection.y = 0;
+    this._objectWorldDirection.normalize();
+    this._objectWorldDirection.cross(this.object.up);
+    return this._objectWorldDirection;
+  }
+
+  /**
    * Updates movement and rotation based on the current keyboard input.
    * @param delta - The time delta for frame-independent movement.
    */
   private updateControls(delta: number) {
     const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
 
-    // Move forward.
+    // Move
     if (keyStates.forward) {
       this.velocity.add(this.getForwardVector().multiplyScalar(speedDelta));
     }
 
-    // Move backward.
     if (keyStates.backward) {
       this.velocity.add(this.getForwardVector().multiplyScalar(-speedDelta));
     }
 
-    // Turn left.
-    if (keyStates.leftTurn) {
-      this.object.rotateY(delta * this.rotateSpeed);
+    if (keyStates.leftward) {
+      this.velocity.add(this.getSideVector().multiplyScalar(-speedDelta));
     }
 
-    // Turn right.
-    if (keyStates.rightTurn) {
-      this.object.rotateY(delta * -this.rotateSpeed);
+    if (keyStates.rightward) {
+      this.velocity.add(this.getSideVector().multiplyScalar(speedDelta));
+    }
+
+    // Turn
+    if (keyStates.turnLeft) {
+      this.object.rotateOnWorldAxis(this._worldYDirection, this.rotateSpeed * delta);
+    }
+
+    if (keyStates.turnRight) {
+      this.object.rotateOnWorldAxis(this._worldYDirection, -this.rotateSpeed * delta);
+    }
+
+    if (keyStates.turnUp && this.object.rotation.x < Math.PI / 2 - 0.01) {
+      this.object.rotateX(this.rotateSpeed * delta);
+    }
+
+    if (keyStates.turnDown && this.object.rotation.x > -Math.PI / 2 + 0.01) {
+      this.object.rotateX(-this.rotateSpeed * delta);
     }
 
     // Jump if grounded.
@@ -145,11 +185,11 @@ class FirstPersonKeyboardControls extends PhysicsControls {
    * @param delta - The time delta for consistent updates.
    */
   update(delta: number) {
-    this.updateControls(delta);
-
     super.update(delta);
 
-    this.object.translateY(this.eyeHeight);
+    this.object.position.y += this.eyeHeight;
+
+    this.updateControls(delta);
   }
 
   /**
@@ -186,24 +226,10 @@ class FirstPersonKeyboardControls extends PhysicsControls {
    * @param event - The keyboard event.
    */
   private onKeyDown(event: KeyboardEvent) {
-    if (this.actionKeys.forward?.some(key => event.key === key)) {
-      keyStates.forward = true;
-    }
-
-    if (this.actionKeys.backward?.some(key => event.key === key)) {
-      keyStates.backward = true;
-    }
-
-    if (this.actionKeys.leftTurn?.some(key => event.key === key)) {
-      keyStates.leftTurn = true;
-    }
-
-    if (this.actionKeys.rightTurn?.some(key => event.key === key)) {
-      keyStates.rightTurn = true;
-    }
-
-    if (this.actionKeys.jump?.some(key => event.key === key)) {
-      keyStates.jump = true;
+    for (const [action, keys] of Object.entries(this.actionKeys)) {
+      if (keys?.includes(event.key)) {
+        keyStates[action as Actions] = true;
+      }
     }
   }
 
@@ -212,24 +238,10 @@ class FirstPersonKeyboardControls extends PhysicsControls {
    * @param event - The keyboard event.
    */
   private onKeyUp(event: KeyboardEvent) {
-    if (this.actionKeys.forward?.some(key => event.key === key)) {
-      keyStates.forward = false;
-    }
-
-    if (this.actionKeys.backward?.some(key => event.key === key)) {
-      keyStates.backward = false;
-    }
-
-    if (this.actionKeys.leftTurn?.some(key => event.key === key)) {
-      keyStates.leftTurn = false;
-    }
-
-    if (this.actionKeys.rightTurn?.some(key => event.key === key)) {
-      keyStates.rightTurn = false;
-    }
-
-    if (this.actionKeys.jump?.some(key => event.key === key)) {
-      keyStates.jump = false;
+    for (const [action, keys] of Object.entries(this.actionKeys)) {
+      if (keys?.includes(event.key)) {
+        keyStates[action as Actions] = false;
+      }
     }
   }
 }
