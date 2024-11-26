@@ -87,7 +87,7 @@ class FirstPersonPointerLockControls extends PhysicsControls {
     this.jumpForce = physicsOptions?.jumpForce ?? 15;
     this.groundMoveSpeed = physicsOptions?.groundMoveSpeed ?? 25;
     this.floatMoveSpeed = physicsOptions?.floatMoveSpeed ?? 8;
-    this.rotateSpeed = physicsOptions?.rotateSpeed ?? 0.02;
+    this.rotateSpeed = physicsOptions?.rotateSpeed ?? 0.002;
 
     // Bind key event handlers.
     this.onKeyDownHandler = this.onKeyDown.bind(this);
@@ -252,7 +252,6 @@ class FirstPersonPointerLockControls extends PhysicsControls {
   }
 
   /**
-   * Handles mouse movement events, adjusting pitch and yaw based on delta movements.
    * @param event - The mouse movement event.
    */
   private onMouseMove(event: MouseEvent) {
