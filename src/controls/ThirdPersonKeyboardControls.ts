@@ -223,19 +223,12 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
   private updateCamera(delta: number) {
     const rotationSpeed = this.rotateSpeed * delta;
 
-    this.object.updateMatrixWorld();
-
-    const lookAtPosition = this._cameraLookAtPosition.copy(this.object.position).add(this._cameraLookAtOffset);
-    this.camera.position.setFromSpherical(this._spherical).add(lookAtPosition);
-
-    this.camera.lookAt(lookAtPosition);
-
     if (keyStates.cameraLeft) {
-      this._spherical.theta -= rotationSpeed;
+      this._spherical.theta += rotationSpeed;
     }
 
     if (keyStates.cameraRight) {
-      this._spherical.theta += rotationSpeed;
+      this._spherical.theta -= rotationSpeed;
     }
 
     if (keyStates.cameraUp) {
@@ -245,6 +238,13 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
     if (keyStates.cameraDown) {
       this._spherical.phi = Math.min(Math.PI - 0.01, this._spherical.phi + rotationSpeed);
     }
+
+    this.object.updateMatrixWorld();
+
+    const lookAtPosition = this._cameraLookAtPosition.copy(this.object.position).add(this._cameraLookAtOffset);
+    this.camera.position.setFromSpherical(this._spherical).add(lookAtPosition);
+
+    this.camera.lookAt(lookAtPosition);
   }
 
   private updateSync() {
