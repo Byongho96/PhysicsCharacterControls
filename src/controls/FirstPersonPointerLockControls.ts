@@ -163,11 +163,11 @@ class FirstPersonPointerLockControls extends PhysicsControls {
    * @param delta - The time delta for consistent updates.
    */
   update(delta: number) {
-    this.updateControls(delta);
-
     super.update(delta);
 
-    this.object.translateY(this.eyeHeight);
+    this.object.position.y += this.eyeHeight;
+
+    this.updateControls(delta);
   }
 
   /**
@@ -259,17 +259,9 @@ class FirstPersonPointerLockControls extends PhysicsControls {
   private onMouseMove(event: MouseEvent) {
     if (document.pointerLockElement === this.domElement) {
       this.object.rotation.y -= event.movementX * this.rotateSpeed;
+      this.object.rotation.x -= event.movementY * this.rotateSpeed;
 
-      const rotationX = this.object.rotation.x - event.movementY * this.rotateSpeed;
-
-      const upwardMax = Math.PI / 2;
-      const downwardMin = -Math.PI / 2;
-
-      if (event.movementY > 0) {
-        this.object.rotation.x = Math.max(rotationX, downwardMin);
-      } else if (event.movementY < 0) {
-        this.object.rotation.x = Math.min(rotationX, upwardMax);
-      }
+      this.object.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.object.rotation.x));
     }
   }
 
