@@ -254,10 +254,22 @@ class FirstPersonPointerLockControls extends PhysicsControls {
   /**
    * @param event - The mouse movement event.
    */
+
+  /** Handles mousemove events to update camera angles with separate clamping for upward and downward movements. */
   private onMouseMove(event: MouseEvent) {
     if (document.pointerLockElement === this.domElement) {
       this.object.rotation.y -= event.movementX * this.rotateSpeed;
-      this.object.rotation.x -= Math.max(-Math.PI / 2, Math.min(Math.PI / 2, event.movementY * this.rotateSpeed));
+
+      const rotationX = this.object.rotation.x - event.movementY * this.rotateSpeed;
+
+      const upwardMax = Math.PI / 2;
+      const downwardMin = -Math.PI / 2;
+
+      if (event.movementY > 0) {
+        this.object.rotation.x = Math.max(rotationX, downwardMin);
+      } else if (event.movementY < 0) {
+        this.object.rotation.x = Math.min(rotationX, upwardMax);
+      }
     }
   }
 
