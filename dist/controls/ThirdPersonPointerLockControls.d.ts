@@ -38,7 +38,6 @@ declare class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
     private _spherical;
     axisSync: 'always' | 'move' | 'never';
     actionKeys: ActionKeys;
-    private _isMouseDown;
     jumpForce: number;
     groundMoveSpeed: number;
     floatMoveSpeed: number;
@@ -46,6 +45,7 @@ declare class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
     private _objectWorldDirection;
     private _accumulatedDirection;
     private _cameraLookAtPosition;
+    private _forwardDirection;
     private onKeyDownHandler;
     private onKeyUpHandler;
     private onMouseDownHandler;

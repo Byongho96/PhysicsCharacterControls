@@ -1077,6 +1077,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
         this._accumulatedDirection = new Vector3();
         this._cameraLookAtPosition = new Vector3();
         this._cameraLerpPosition = new Vector3();
+        this._forwardDirection = new Vector3();
         /** Handles mousedown events to set _isMouseDown flag. */
         this.onMouseDown = () => {
             this._isMouseDown = true;
@@ -1142,7 +1143,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
      * @returns Normalized forward vector.
      */
     getForwardVector() {
-        this.camera.getWorldDirection(this._objectWorldDirection);
+        this._objectWorldDirection.copy(this._forwardDirection);
         this._objectWorldDirection.y = 0;
         this._objectWorldDirection.normalize();
         return this._objectWorldDirection;
@@ -1152,7 +1153,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
      * @returns Normalized side vector.
      */
     getSideVector() {
-        this.camera.getWorldDirection(this._objectWorldDirection);
+        this._objectWorldDirection.copy(this._forwardDirection);
         this._objectWorldDirection.y = 0;
         this._objectWorldDirection.normalize();
         this._objectWorldDirection.cross(this.object.up);
@@ -1160,11 +1161,13 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
     }
     updateSync() {
         if (this.axisSync === 'always') {
+            this.camera.getWorldDirection(this._forwardDirection);
             this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
             return;
         }
         if (this.axisSync === 'move' &&
             (keyStates$2.forward || keyStates$2.backward || keyStates$2.leftward || keyStates$2.rightward)) {
+            this.camera.getWorldDirection(this._forwardDirection);
             this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
             return;
         }
@@ -1323,11 +1326,11 @@ class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
     constructor(object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions = {}, physicsOptions = {}) {
         var _a, _b, _c, _d, _e;
         super(object, domElement, worldObject, animationOptions, physicsOptions);
-        this._isMouseDown = false;
         // Temporary vectors for calculations
         this._objectWorldDirection = new Vector3();
         this._accumulatedDirection = new Vector3();
         this._cameraLookAtPosition = new Vector3();
+        this._forwardDirection = new Vector3();
         /** Handles mousedown events to lock pointer. */
         this.onMouseDown = () => {
             var _a;
@@ -1348,6 +1351,7 @@ class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
         this._cameraLookAtOffset = cameraOptions.lookAtOffset;
         this._spherical = new Spherical();
         this.updateCameraInfo();
+        this.object.getWorldDirection(this._forwardDirection);
         this.axisSync = (_a = cameraOptions.axisSync) !== null && _a !== void 0 ? _a : 'move';
         // Set physics options with default values
         this.jumpForce = (_b = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.jumpForce) !== null && _b !== void 0 ? _b : 15;
@@ -1388,7 +1392,7 @@ class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
      * @returns Normalized forward vector.
      */
     getForwardVector() {
-        this.camera.getWorldDirection(this._objectWorldDirection);
+        this._objectWorldDirection.copy(this._forwardDirection);
         this._objectWorldDirection.y = 0;
         this._objectWorldDirection.normalize();
         return this._objectWorldDirection;
@@ -1398,7 +1402,7 @@ class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
      * @returns Normalized side vector.
      */
     getSideVector() {
-        this.camera.getWorldDirection(this._objectWorldDirection);
+        this._objectWorldDirection.copy(this._forwardDirection);
         this._objectWorldDirection.y = 0;
         this._objectWorldDirection.normalize();
         this._objectWorldDirection.cross(this.object.up);
@@ -1406,11 +1410,13 @@ class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
     }
     updateSync() {
         if (this.axisSync === 'always') {
+            this.camera.getWorldDirection(this._forwardDirection);
             this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
             return;
         }
         if (this.axisSync === 'move' &&
             (keyStates$1.forward || keyStates$1.backward || keyStates$1.leftward || keyStates$1.rightward)) {
+            this.camera.getWorldDirection(this._forwardDirection);
             this.object.lookAt(this.object.position.clone().add(this.getForwardVector()));
             return;
         }

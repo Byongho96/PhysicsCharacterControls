@@ -139,6 +139,7 @@
 
         // GUI - Camera
         const folder4 = gui.addFolder('Camera');
+        folder4.add(controls, 'axisSync', ['always', 'move', 'never']);
         const cameraPosition = folder4.addFolder('Position');
         cameraPosition.add(controls.cameraPosOffset, 'x', -10, 10).name('x').listen();
         cameraPosition.add(controls.cameraPosOffset, 'y', -10, 10).name('y').listen();

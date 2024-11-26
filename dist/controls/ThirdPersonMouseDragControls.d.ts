@@ -49,6 +49,7 @@ declare class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
     private _accumulatedDirection;
     private _cameraLookAtPosition;
     private _cameraLerpPosition;
+    private _forwardDirection;
     private onKeyDownHandler;
     private onKeyUpHandler;
     private onMouseDownHandler;
