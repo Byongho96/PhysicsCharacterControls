@@ -56,9 +56,9 @@ class PhysicsCharacterControls extends PhysicsControls {
       });
     }
 
-    this.transitionTime = animationOptions.transitionTime ?? 0.5;
+    this.transitionTime = animationOptions.transitionTime ?? 0.4;
     this.fallSpeedThreshold = animationOptions.fallSpeedThreshold ?? 15;
-    this.moveSpeedThreshold = animationOptions.moveSpeedThreshold ?? 0.1;
+    this.moveSpeedThreshold = animationOptions.moveSpeedThreshold ?? 0.9;
   }
 
   /**
@@ -147,10 +147,12 @@ class PhysicsCharacterControls extends PhysicsControls {
     }
 
     if (this.isGrounded && this._localVelocity.z < -this.moveSpeedThreshold) {
+      console.log('back');
       return this._fadeToAction('backward', this.transitionTime);
     }
 
     if (this.isGrounded && this._localVelocity.x > this.moveSpeedThreshold) {
+      console.log('left');
       return this._fadeToAction('leftward', this.transitionTime);
     }
 

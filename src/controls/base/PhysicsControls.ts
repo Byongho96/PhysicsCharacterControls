@@ -99,7 +99,7 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
     this.step = physicsOptions?.step ?? 5;
     this.gravity = physicsOptions?.gravity ?? 30;
     this.maxFallSpeed = physicsOptions?.maxFallSpeed ?? 20;
-    this.movementResistance = physicsOptions?.movementResistance ?? 4;
+    this.movementResistance = physicsOptions?.movementResistance ?? 6;
 
     // Set boundary properties if provided.
     this.boundary = physicsOptions?.boundary;
