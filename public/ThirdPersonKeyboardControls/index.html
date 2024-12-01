@@ -52,9 +52,13 @@
         gltfLoader.loadAsync('../assets/animations/run_backward.glb'),
         gltfLoader.loadAsync('../assets/animations/run_leftward.glb'),
         gltfLoader.loadAsync('../assets/animations/run_rightward.glb'),
+        gltfLoader.loadAsync('../assets/animations/run_forward_fast.glb'),
+        gltfLoader.loadAsync('../assets/animations/run_backward_fast.glb'),
+        gltfLoader.loadAsync('../assets/animations/run_leftward_fast.glb'),
+        gltfLoader.loadAsync('../assets/animations/run_rightward_fast.glb'),
         gltfLoader.loadAsync('../assets/animations/jump.glb'),
         gltfLoader.loadAsync('../assets/animations/fall.glb'),
-      ]).then(([world, character, idle, forward, backward, leftward, rightward, jump, fall]) => {
+      ]).then(([world, character, idle, forward, backward, leftward, rightward, runForward, runBackward, runLeftward, runRightward, jump, fall]) => {
         scene.add(world.scene);
         world.scene.traverse(child => {
           if (child.isMesh) {
@@ -74,10 +78,10 @@
         });
 
         controls = new ThirdPersonKeyboardControls({
-          object : character.scene,
-          domElement:renderer.domElement,
-          worldObject:world.scene,
-          camera:camera,
+          object: character.scene,
+          domElement: renderer.domElement,
+          worldObject: world.scene,
+          camera: camera,
           animationOptions: {
             animationClips: {
               idle: idle.animations[0],
@@ -85,6 +89,10 @@
               backward: backward.animations[0],
               leftward: leftward.animations[0],
               rightward: rightward.animations[0],
+              runForward: runForward.animations[0],
+              runBackward: runBackward.animations[0],
+              runLeftward: runLeftward.animations[0],
+              runRightward: runRightward.animations[0],
               jump: jump.animations[0],
               fall: fall.animations[0],
             },
@@ -125,6 +133,8 @@
         folder2.add(controls, 'movementResistance', 0, 10).name('resistance').listen();
         folder2.add(controls, 'enableDiagonalMovement').name('diagonal movement').listen();
         folder2.add(controls, 'enableRotationOnMove').name('rotation on move').listen();
+        folder2.add(controls, 'enableAcceleration').name('enable acceleration').listen();
+        folder2.add(controls, 'accelerationFactor', 1, 3).name('acceleration factor').listen();
 
         // GUI - Camera
         const folder3 = gui.addFolder('Camera');
@@ -143,8 +153,9 @@
 
         // GUI - Animation
         const folder4 = gui.addFolder('Animation');
-        folder4.add(controls, 'moveSpeedThreshold', 0, 2).name('move speed threshold').listen();
-        folder4.add(controls, 'fallSpeedThreshold', 1, 30).name('fall speed threshold').listen();
+        folder4.add(controls, 'moveSpeedThreshold', 0, 2).name('move threshold').listen();
+        folder4.add(controls, 'runSpeedThreshold', 2, 8).name('run threshold').listen();
+        folder4.add(controls, 'fallSpeedThreshold', 1, 30).name('fall threshold').listen();
         folder4.add(controls, 'transitionTime', 0, 1).name('transition time').listen();
      });
 

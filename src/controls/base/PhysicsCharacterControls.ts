@@ -12,7 +12,18 @@ import { PhysicsControls, PhysicsOptions } from './PhysicsControls';
 /**
  * Animation states that can be used.
  */
-type Animations = 'idle' | 'forward' | 'backward' | 'rightward' | 'leftward' | 'jump' | 'fall';
+type Animations =
+  | 'idle'
+  | 'forward'
+  | 'backward'
+  | 'rightward'
+  | 'leftward'
+  | 'runForward'
+  | 'runBackward'
+  | 'runRightward'
+  | 'runLeftward'
+  | 'jump'
+  | 'fall';
 
 /**
  * Configuration for animations and their options.
@@ -23,6 +34,7 @@ export type AnimationOptions = {
   transitionDelay?: number;
   fallSpeedThreshold?: number;
   moveSpeedThreshold?: number;
+  runSpeedThreshold?: number;
 };
 
 class PhysicsCharacterControls extends PhysicsControls {
@@ -36,6 +48,7 @@ class PhysicsCharacterControls extends PhysicsControls {
   transitionDelay: number;
   fallSpeedThreshold: number;
   moveSpeedThreshold: number;
+  runSpeedThreshold: number;
 
   private _localVelocity: Vector3 = new Vector3();
   private _worldQuaternion: Quaternion = new Quaternion();
@@ -62,6 +75,7 @@ class PhysicsCharacterControls extends PhysicsControls {
     this.transitionDelay = animationOptions.transitionDelay ?? 0.3;
     this.fallSpeedThreshold = animationOptions.fallSpeedThreshold ?? 15;
     this.moveSpeedThreshold = animationOptions.moveSpeedThreshold ?? 1;
+    this.runSpeedThreshold = animationOptions.runSpeedThreshold ?? 5;
   }
 
   /**
@@ -145,16 +159,32 @@ class PhysicsCharacterControls extends PhysicsControls {
     const worldQuaternion = this.object.getWorldQuaternion(this._worldQuaternion);
     this._localVelocity.copy(this.velocity).applyQuaternion(worldQuaternion.invert());
 
+    if (this.isGrounded && this._localVelocity.z > this.runSpeedThreshold && this._animationActions.runForward) {
+      return this._fadeToAction('runForward', this.transitionTime);
+    }
+
     if (this.isGrounded && this._localVelocity.z > this.moveSpeedThreshold) {
       return this._fadeToAction('forward', this.transitionTime);
+    }
+
+    if (this.isGrounded && this._localVelocity.z < -this.runSpeedThreshold && this._animationActions.runBackward) {
+      return this._fadeToAction('runBackward', this.transitionTime);
     }
 
     if (this.isGrounded && this._localVelocity.z < -this.moveSpeedThreshold) {
       return this._fadeToAction('backward', this.transitionTime);
     }
 
+    if (this.isGrounded && this._localVelocity.x > this.runSpeedThreshold && this._animationActions.runLeftward) {
+      return this._fadeToAction('runLeftward', this.transitionTime);
+    }
+
     if (this.isGrounded && this._localVelocity.x > this.moveSpeedThreshold) {
       return this._fadeToAction('leftward', this.transitionTime);
+    }
+
+    if (this.isGrounded && this._localVelocity.x < -this.runSpeedThreshold && this._animationActions.runRightward) {
+      return this._fadeToAction('runRightward', this.transitionTime);
     }
 
     if (this.isGrounded && this._localVelocity.x < -this.moveSpeedThreshold) {

@@ -94,6 +94,8 @@
         folder2.add(controls, 'rotateSpeed', 0, 5).name('rotate speed').listen();
         folder2.add(controls, 'movementResistance', 0, 10).name('resistance').listen();
         folder2.add(controls, 'enableDiagonalMovement').name('diagonal movement').listen();
+        folder2.add(controls, 'enableAcceleration').name('enable acceleration').listen();
+        folder2.add(controls, 'accelerationFactor', 1, 3).name('acceleration factor').listen();
 
         // GUI - Camera
         const folder3 = gui.addFolder('Camera');
