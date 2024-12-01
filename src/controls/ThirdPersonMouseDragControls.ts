@@ -38,7 +38,7 @@ type MouseDragPhysicsOptions = PhysicsOptions & {
   enableRotationOnMove?: boolean;
 };
 
-type MouseDragControlsProps = {
+type ThirdPersonMouseDragControlsProps = {
   object: Object3D;
   domElement: HTMLElement | null;
   worldObject: Object3D;
@@ -123,7 +123,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
     cameraOptions,
     animationOptions,
     physicsOptions,
-  }: MouseDragControlsProps) {
+  }: ThirdPersonMouseDragControlsProps) {
     super(object, domElement, worldObject, animationOptions, physicsOptions);
 
     this.actionKeys = actionKeys ?? DEFAULT_ACTION_KEYS;

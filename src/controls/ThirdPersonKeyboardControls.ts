@@ -47,7 +47,7 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
   enableRotationOnMove?: boolean;
 };
 
-type KeyboardControlsProps = {
+type ThirdPersonKeyboardControlsProps = {
   object: Object3D;
   domElement: HTMLElement | null;
   worldObject: Object3D;
@@ -134,7 +134,7 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
     cameraOptions,
     animationOptions,
     physicsOptions,
-  }: KeyboardControlsProps) {
+  }: ThirdPersonKeyboardControlsProps) {
     super(object, domElement, worldObject, animationOptions, physicsOptions);
 
     this.actionKeys = actionKeys ?? DEFAULT_ACTION_KEYS;

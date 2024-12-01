@@ -33,7 +33,7 @@ type PointerLockPhysicsOptions = PhysicsOptions & {
   enableDiagonalMovement?: boolean;
 };
 
-type PointerLockControlsProps = {
+type FirstPersonPointerLockControlsProps = {
   object: Object3D;
   domElement: HTMLElement | null;
   worldObject: Object3D;
@@ -100,7 +100,7 @@ class FirstPersonPointerLockControls extends PhysicsControls {
     actionKeys,
     cameraOptions,
     physicsOptions,
-  }: PointerLockControlsProps) {
+  }: FirstPersonPointerLockControlsProps) {
     super(object, domElement, worldObject, {
       colliderHeight: 1.6,
       colliderRadius: 0.5,
@@ -304,8 +304,8 @@ class FirstPersonPointerLockControls extends PhysicsControls {
   private _onMouseMove(event: MouseEvent) {
     if (document.pointerLockElement !== this.domElement) return;
 
-    this.object.rotation.y -= (event.movementX * this.rotateSpeed) / 100;
-    this.object.rotation.x -= (event.movementY * this.rotateSpeed) / 100;
+    this.object.rotateOnWorldAxis(this._worldYDirection, (-1 * event.movementX * this.rotateSpeed) / 100);
+    this.object.rotateX((-1 * event.movementY * this.rotateSpeed) / 100);
 
     this.object.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.object.rotation.x));
   }
