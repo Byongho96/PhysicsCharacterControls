@@ -10,7 +10,7 @@ export interface PhysicsControlsEventMap {
   /**
    * Fires when the collider has collided with the world.
    */
-  collide: { position: Vector3; normal: Vector3 };
+  collide: { normal: Vector3 };
 }
 
 /**
@@ -69,7 +69,6 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
 
   // Temporary vectors for calculations
   private _deltaVelocity: Vector3 = new Vector3();
-  private _collisionPosition: Vector3 = new Vector3();
 
   /**
    * Constructs a new PhysicsControls instance.
@@ -132,11 +131,7 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
     // Adjust the collider position to resolve penetration.
     if (collisionResult.depth >= 1e-10) {
       this.collider.translate(collisionResult.normal.multiplyScalar(collisionResult.depth));
-
-      const position =
-        this.collider.getCenter(this._collisionPosition) +
-        collisionResult.normal.multiplyScalar(-0.5 * collisionResult.depth);
-      this.dispatchEvent({ ..._collideEvent, position: position, normal: collisionResult.normal });
+      this.dispatchEvent({ ..._collideEvent, normal: collisionResult.normal.normalize() });
     }
   }
 
@@ -151,8 +146,8 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
 
     // Check if the player is out of bounds.
     if (px < x.min || px > x.max || py < y.min || py > y.max || pz < z.min || pz > z.max) {
-      this.collider.start.set(resetPoint.x, resetPoint.y + this.collider.radius, resetPoint.z);
       this.collider.end.set(resetPoint.x, resetPoint.y + this.collider.height - this.collider.radius, resetPoint.z);
+      this.collider.start.set(resetPoint.x, resetPoint.y + this.collider.radius, resetPoint.z);
       this.velocity.set(0, 0, 0);
     }
   }
@@ -179,6 +174,7 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
       }
 
       this.velocity.addScaledVector(this.velocity, damping);
+
       this._deltaVelocity.copy(this.velocity).multiplyScalar(stepDelta);
       this.collider.translate(this._deltaVelocity);
 
