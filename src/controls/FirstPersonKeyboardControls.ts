@@ -42,7 +42,7 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
   enableDiagonalMovement?: boolean;
 };
 
-type KeyboardControlsProps = {
+type FirstPersonKeyboardControlsProps = {
   object: Object3D;
   domElement: HTMLElement | null;
   worldObject: Object3D;
@@ -109,7 +109,14 @@ class FirstPersonKeyboardControls extends PhysicsControls {
   private onKeyUp: (event: KeyboardEvent) => void;
   private onMouseWheel: (event: WheelEvent) => void;
 
-  constructor({ object, domElement, worldObject, actionKeys, cameraOptions, physicsOptions }: KeyboardControlsProps) {
+  constructor({
+    object,
+    domElement,
+    worldObject,
+    actionKeys,
+    cameraOptions,
+    physicsOptions,
+  }: FirstPersonKeyboardControlsProps) {
     super(object, domElement, worldObject, {
       colliderHeight: 1.6,
       colliderRadius: 0.5,

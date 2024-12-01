@@ -38,7 +38,7 @@ type PointerLockPhysicsOptions = PhysicsOptions & {
   enableRotationOnMove?: boolean;
 };
 
-type PointerLockControlsProps = {
+type ThirdPersonPointerLockControlsProps = {
   object: Object3D;
   domElement: HTMLElement | null;
   worldObject: Object3D;
@@ -121,7 +121,7 @@ class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
     cameraOptions,
     animationOptions,
     physicsOptions,
-  }: PointerLockControlsProps) {
+  }: ThirdPersonPointerLockControlsProps) {
     super(object, domElement, worldObject, animationOptions, physicsOptions);
 
     this.actionKeys = actionKeys ?? DEFAULT_ACTION_KEYS;
