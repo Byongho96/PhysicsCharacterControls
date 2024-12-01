@@ -33,7 +33,7 @@ type PointerLockPhysicsOptions = PhysicsOptions & {
     enableDiagonalMovement?: boolean;
     enableRotationOnMove?: boolean;
 };
-type PointerLockControlsProps = {
+type ThirdPersonPointerLockControlsProps = {
     object: Object3D;
     domElement: HTMLElement | null;
     worldObject: Object3D;
@@ -73,7 +73,7 @@ declare class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
     private onMouseDown;
     private onMouseMove;
     private onMouseWheel;
-    constructor({ object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions, physicsOptions, }: PointerLockControlsProps);
+    constructor({ object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions, physicsOptions, }: ThirdPersonPointerLockControlsProps);
     /**
      * Gets the forward direction vector based on the camera's orientation.
      * @returns Normalized forward vector.

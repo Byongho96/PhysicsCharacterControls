@@ -33,7 +33,7 @@ type MouseDragPhysicsOptions = PhysicsOptions & {
     enableDiagonalMovement?: boolean;
     enableRotationOnMove?: boolean;
 };
-type MouseDragControlsProps = {
+type ThirdPersonMouseDragControlsProps = {
     object: Object3D;
     domElement: HTMLElement | null;
     worldObject: Object3D;
@@ -75,7 +75,7 @@ declare class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
     private onMouseUp;
     private onMouseMove;
     private onMouseWheel;
-    constructor({ object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions, physicsOptions, }: MouseDragControlsProps);
+    constructor({ object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions, physicsOptions, }: ThirdPersonMouseDragControlsProps);
     /**
      * Gets the forward direction vector based on the camera's orientation.
      * @returns Normalized forward vector.

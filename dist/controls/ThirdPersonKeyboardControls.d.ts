@@ -33,7 +33,7 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
     enableDiagonalMovement?: boolean;
     enableRotationOnMove?: boolean;
 };
-type KeyboardControlsProps = {
+type ThirdPersonKeyboardControlsProps = {
     object: Object3D;
     domElement: HTMLElement | null;
     worldObject: Object3D;
@@ -71,7 +71,7 @@ declare class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
     private onKeyDown;
     private onKeyUp;
     private onMouseWheel;
-    constructor({ object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions, physicsOptions, }: KeyboardControlsProps);
+    constructor({ object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions, physicsOptions, }: ThirdPersonKeyboardControlsProps);
     /**
      * Gets the forward direction vector based on the camera's orientation.
      * @returns Normalized forward vector.
