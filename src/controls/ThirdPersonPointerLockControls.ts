@@ -5,7 +5,7 @@ import PhysicsCharacterControls, { AnimationOptions } from './base/PhysicsCharac
 /**
  * Possible actions that can be mapped to keyboard inputs.
  */
-type Actions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'jump';
+type Actions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'jump' | 'accelerate';
 
 /**
  * Configuration for key mappings to actions.
@@ -36,6 +36,8 @@ type PointerLockPhysicsOptions = PhysicsOptions & {
   rotateSpeed?: number;
   enableDiagonalMovement?: boolean;
   enableRotationOnMove?: boolean;
+  enableAcceleration?: boolean;
+  accelerationFactor?: number;
 };
 
 type ThirdPersonPointerLockControlsProps = {
@@ -58,6 +60,7 @@ const keyStates: Record<Actions, number> = {
   leftward: 0,
   rightward: 0,
   jump: 0,
+  accelerate: 0,
 };
 
 const DEFAULT_ACTION_KEYS: ActionKeys = {
@@ -66,6 +69,7 @@ const DEFAULT_ACTION_KEYS: ActionKeys = {
   leftward: ['KeyA', 'ArrowLeft'],
   rightward: ['KeyD', 'ArrowRight'],
   jump: ['Space'],
+  accelerate: ['ShiftLeft'],
 };
 
 /**
@@ -94,6 +98,9 @@ class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
 
   enableDiagonalMovement: boolean;
   enableRotationOnMove: boolean;
+
+  enableAcceleration: boolean;
+  accelerationFactor: number;
 
   private _spherical: Spherical = new Spherical(); // Spherical coordinates for camera position
   private _keyCount: number = 0; // Number of keys currently pressed
@@ -146,6 +153,9 @@ class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
 
     this.enableDiagonalMovement = physicsOptions?.enableDiagonalMovement ?? true;
     this.enableRotationOnMove = physicsOptions?.enableRotationOnMove ?? true;
+
+    this.enableAcceleration = physicsOptions?.enableAcceleration ?? true;
+    this.accelerationFactor = physicsOptions?.accelerationFactor ?? 1.5;
 
     // Bind key event handlers.
     this.onKeyDown = this._onKeyDown.bind(this);
@@ -234,7 +244,8 @@ class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
    * @param delta - Time delta for frame-independent movement.
    */
   private updateControls(delta: number) {
-    const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+    let speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+    if (this.enableAcceleration && keyStates.accelerate) speedDelta *= this.accelerationFactor;
 
     let movement: Vector3;
     if (this.enableDiagonalMovement) movement = this._accumulateDirection();

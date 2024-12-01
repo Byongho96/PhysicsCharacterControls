@@ -14,7 +14,8 @@ type Actions =
   | 'turnUp'
   | 'turnDown'
   | 'turnLeft'
-  | 'turnRight';
+  | 'turnRight'
+  | 'accelerate';
 
 /**
  * Configuration for key mappings to actions.
@@ -45,6 +46,8 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
   rotateSpeed?: number;
   enableDiagonalMovement?: boolean;
   enableRotationOnMove?: boolean;
+  enableAcceleration?: boolean;
+  accelerationFactor?: number;
 };
 
 type ThirdPersonKeyboardControlsProps = {
@@ -71,6 +74,7 @@ const keyStates: Record<Actions, number> = {
   turnDown: 0,
   turnLeft: 0,
   turnRight: 0,
+  accelerate: 0,
 };
 
 const DEFAULT_ACTION_KEYS: ActionKeys = {
@@ -83,6 +87,7 @@ const DEFAULT_ACTION_KEYS: ActionKeys = {
   turnDown: ['ArrowDown'],
   turnLeft: ['ArrowLeft'],
   turnRight: ['ArrowRight'],
+  accelerate: ['ShiftLeft'],
 };
 
 /**
@@ -110,6 +115,9 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
 
   enableDiagonalMovement: boolean;
   enableRotationOnMove: boolean;
+
+  enableAcceleration: boolean;
+  accelerationFactor: number;
 
   private _spherical: Spherical = new Spherical();
   private _keyCount: number = 0;
@@ -159,6 +167,9 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
 
     this.enableDiagonalMovement = physicsOptions?.enableDiagonalMovement ?? true;
     this.enableRotationOnMove = physicsOptions?.enableRotationOnMove ?? true;
+
+    this.enableAcceleration = physicsOptions?.enableAcceleration ?? true;
+    this.accelerationFactor = physicsOptions?.accelerationFactor ?? 1.5;
 
     this.onKeyDown = this._onKeyDown.bind(this);
     this.onKeyUp = this._onKeyUp.bind(this);
@@ -243,7 +254,8 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
    * @param delta - Time delta for frame-independent movement.
    */
   private updateControls(delta: number) {
-    const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+    let speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+    if (this.enableAcceleration && keyStates.accelerate) speedDelta *= this.accelerationFactor;
 
     let movement: Vector3;
     if (this.enableDiagonalMovement) movement = this._accumulateDirection();
@@ -307,12 +319,7 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
 
     // Update camera position with lerp
     this._cameraLookAtPosition.copy(this.object.position).add(this.cameraLookAtOffset);
-
-    if (this.cameraLerpFactor > 0) {
-      this._cameraLerpPosition.lerp(this._cameraLookAtPosition, this.cameraLerpFactor);
-    } else {
-      this._cameraLerpPosition.copy(this._cameraLookAtPosition);
-    }
+    this._cameraLerpPosition.lerp(this._cameraLookAtPosition, this.cameraLerpFactor);
 
     this._spherical.radius = this.cameraPositionOffset.distanceTo(this.cameraLookAtOffset);
     this.camera.position.setFromSpherical(this._spherical).add(this._cameraLerpPosition);

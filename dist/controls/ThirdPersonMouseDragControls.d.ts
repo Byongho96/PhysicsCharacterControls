@@ -4,7 +4,7 @@ import PhysicsCharacterControls, { AnimationOptions } from './base/PhysicsCharac
 /**
  * Possible actions that can be mapped to keyboard inputs.
  */
-type Actions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'jump';
+type Actions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'jump' | 'accelerate';
 /**
  * Configuration for key mappings to actions.
  */
@@ -32,6 +32,8 @@ type MouseDragPhysicsOptions = PhysicsOptions & {
     rotateSpeed?: number;
     enableDiagonalMovement?: boolean;
     enableRotationOnMove?: boolean;
+    enableAcceleration?: boolean;
+    accelerationFactor?: number;
 };
 type ThirdPersonMouseDragControlsProps = {
     object: Object3D;
@@ -61,6 +63,8 @@ declare class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
     rotateSpeed: number;
     enableDiagonalMovement: boolean;
     enableRotationOnMove: boolean;
+    enableAcceleration: boolean;
+    accelerationFactor: number;
     private _spherical;
     private _isMouseDown;
     private _keyCount;

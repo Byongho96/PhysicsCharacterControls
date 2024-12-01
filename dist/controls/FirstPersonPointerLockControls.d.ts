@@ -3,7 +3,7 @@ import { PhysicsControls, PhysicsOptions } from './base/PhysicsControls';
 /**
  * Possible actions that can be mapped to keyboard inputs.
  */
-type Actions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'jump';
+type Actions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'jump' | 'accelerate';
 /**
  * Configuration for key mappings to actions.
  */
@@ -27,6 +27,8 @@ type PointerLockPhysicsOptions = PhysicsOptions & {
     floatMoveSpeed?: number;
     rotateSpeed?: number;
     enableDiagonalMovement?: boolean;
+    enableAcceleration?: boolean;
+    accelerationFactor?: number;
 };
 type FirstPersonPointerLockControlsProps = {
     object: Object3D;
@@ -49,6 +51,8 @@ declare class FirstPersonPointerLockControls extends PhysicsControls {
     floatMoveSpeed: number;
     rotateSpeed: number;
     enableDiagonalMovement: boolean;
+    enableAcceleration: boolean;
+    accelerationFactor: number;
     private _keyCount;
     private _objectLocalDirection;
     private _accumulatedDirection;

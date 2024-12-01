@@ -4,7 +4,7 @@ import PhysicsCharacterControls, { AnimationOptions } from './base/PhysicsCharac
 /**
  * Possible actions for character and camera movement.
  */
-type Actions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'jump' | 'turnUp' | 'turnDown' | 'turnLeft' | 'turnRight';
+type Actions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'jump' | 'turnUp' | 'turnDown' | 'turnLeft' | 'turnRight' | 'accelerate';
 /**
  * Configuration for key mappings to actions.
  */
@@ -32,6 +32,8 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
     rotateSpeed?: number;
     enableDiagonalMovement?: boolean;
     enableRotationOnMove?: boolean;
+    enableAcceleration?: boolean;
+    accelerationFactor?: number;
 };
 type ThirdPersonKeyboardControlsProps = {
     object: Object3D;
@@ -61,6 +63,8 @@ declare class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
     rotateSpeed: number;
     enableDiagonalMovement: boolean;
     enableRotationOnMove: boolean;
+    enableAcceleration: boolean;
+    accelerationFactor: number;
     private _spherical;
     private _keyCount;
     private _forwardDirection;

@@ -581,6 +581,7 @@ const keyStates$5 = {
     turnLeft: 0,
     turnRight: 0,
     jump: 0,
+    accelerate: 0,
 };
 const DEFAULT_ACTION_KEYS$5 = {
     forward: ['KeyW'],
@@ -592,13 +593,14 @@ const DEFAULT_ACTION_KEYS$5 = {
     turnDown: ['ArrowDown'],
     turnLeft: ['ArrowLeft'],
     turnRight: ['ArrowRight'],
+    accelerate: ['ShiftLeft'],
 };
 /**
  * FirstPersonKeyboardControls class allows controlling a 3D object using the keyboard,
  */
 class FirstPersonKeyboardControls extends PhysicsControls {
     constructor({ object, domElement, worldObject, actionKeys, cameraOptions, physicsOptions, }) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         super(object, domElement, worldObject, Object.assign({ colliderHeight: 1.6, colliderRadius: 0.5 }, physicsOptions));
         this._keyCount = 0;
         // Temporary vectors for calculations
@@ -630,6 +632,8 @@ class FirstPersonKeyboardControls extends PhysicsControls {
         this.floatMoveSpeed = (_f = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.floatMoveSpeed) !== null && _f !== void 0 ? _f : 8;
         this.rotateSpeed = (_g = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _g !== void 0 ? _g : 1;
         this.enableDiagonalMovement = (_h = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableDiagonalMovement) !== null && _h !== void 0 ? _h : true;
+        this.enableAcceleration = (_j = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableAcceleration) !== null && _j !== void 0 ? _j : true;
+        this.accelerationFactor = (_k = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.accelerationFactor) !== null && _k !== void 0 ? _k : 1.5;
         // Bind key event handlers.
         this.onKeyDown = this._onKeyDown.bind(this);
         this.onKeyUp = this._onKeyUp.bind(this);
@@ -703,7 +707,9 @@ class FirstPersonKeyboardControls extends PhysicsControls {
      * @param delta - The time delta for frame-independent movement.
      */
     updateControls(delta) {
-        const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        let speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        if (this.enableAcceleration && keyStates$5.accelerate)
+            speedDelta *= this.accelerationFactor;
         // Move
         let movement;
         if (this.enableDiagonalMovement)
@@ -796,6 +802,7 @@ const keyStates$4 = {
     leftward: 0,
     rightward: 0,
     jump: 0,
+    accelerate: 0,
 };
 const DEFAULT_ACTION_KEYS$4 = {
     forward: ['KeyW', 'ArrowUp'],
@@ -803,6 +810,7 @@ const DEFAULT_ACTION_KEYS$4 = {
     leftward: ['KeyA', 'ArrowLeft'],
     rightward: ['KeyD', 'ArrowRight'],
     jump: ['Space'],
+    accelerate: ['ShiftLeft'],
 };
 /**
  * FirstPersonMouseDragControls class allows controlling a 3D object using the mouse drag,
@@ -819,7 +827,7 @@ class FirstPersonMouseDragControls extends PhysicsControls {
      * @param physicsOptions - Physics configuration options (optional).
      */
     constructor({ object, domElement, worldObject, actionKeys, cameraOptions, physicsOptions, }) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         super(object, domElement, worldObject, Object.assign({ colliderHeight: 1.6, colliderRadius: 0.5 }, physicsOptions));
         this._keyCount = 0;
         // Temporary vectors for calculations
@@ -868,6 +876,8 @@ class FirstPersonMouseDragControls extends PhysicsControls {
         this.floatMoveSpeed = (_f = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.floatMoveSpeed) !== null && _f !== void 0 ? _f : 8;
         this.rotateSpeed = (_g = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _g !== void 0 ? _g : 0.5;
         this.enableDiagonalMovement = (_h = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableDiagonalMovement) !== null && _h !== void 0 ? _h : true;
+        this.enableAcceleration = (_j = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableAcceleration) !== null && _j !== void 0 ? _j : true;
+        this.accelerationFactor = (_k = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.accelerationFactor) !== null && _k !== void 0 ? _k : 1.5;
         // Bind key event handlers.
         this.onKeyDown = this._onKeyDown.bind(this);
         this.onKeyUp = this._onKeyUp.bind(this);
@@ -944,7 +954,9 @@ class FirstPersonMouseDragControls extends PhysicsControls {
      * @param delta - The time delta for frame-independent movement.
      */
     updateControls(delta) {
-        const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        let speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        if (this.enableAcceleration && keyStates$4.accelerate)
+            speedDelta *= this.accelerationFactor;
         // Move
         let movement;
         if (this.enableDiagonalMovement)
@@ -1029,6 +1041,7 @@ const keyStates$3 = {
     leftward: 0,
     rightward: 0,
     jump: 0,
+    accelerate: 0,
 };
 const DEFAULT_ACTION_KEYS$3 = {
     forward: ['KeyW', 'ArrowUp'],
@@ -1036,13 +1049,14 @@ const DEFAULT_ACTION_KEYS$3 = {
     leftward: ['KeyA', 'ArrowLeft'],
     rightward: ['KeyD', 'ArrowRight'],
     jump: ['Space'],
+    accelerate: ['ShiftLeft'],
 };
 /**
  * FirstPersonPointerLockControls class allows controlling a 3D object using the Pointer Lock API and mouse input.
  */
 class FirstPersonPointerLockControls extends PhysicsControls {
     constructor({ object, domElement, worldObject, actionKeys, cameraOptions, physicsOptions, }) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         super(object, domElement, worldObject, Object.assign({ colliderHeight: 1.6, colliderRadius: 0.5 }, physicsOptions));
         this._keyCount = 0;
         // Temporary vectors for calculations
@@ -1070,10 +1084,12 @@ class FirstPersonPointerLockControls extends PhysicsControls {
         // Set physics parameters with defaults if not provided.
         this.eyeHeight = (_c = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.eyeHeight) !== null && _c !== void 0 ? _c : 1.5;
         this.jumpForce = (_d = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.jumpForce) !== null && _d !== void 0 ? _d : 15;
-        this.groundMoveSpeed = (_e = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.groundMoveSpeed) !== null && _e !== void 0 ? _e : 25;
+        this.groundMoveSpeed = (_e = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.groundMoveSpeed) !== null && _e !== void 0 ? _e : 30;
         this.floatMoveSpeed = (_f = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.floatMoveSpeed) !== null && _f !== void 0 ? _f : 8;
         this.rotateSpeed = (_g = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _g !== void 0 ? _g : 0.2;
         this.enableDiagonalMovement = (_h = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableDiagonalMovement) !== null && _h !== void 0 ? _h : true;
+        this.enableAcceleration = (_j = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableAcceleration) !== null && _j !== void 0 ? _j : true;
+        this.accelerationFactor = (_k = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.accelerationFactor) !== null && _k !== void 0 ? _k : 1.5;
         // Bind key event handlers.
         this.onKeyDown = this._onKeyDown.bind(this);
         this.onKeyUp = this._onKeyUp.bind(this);
@@ -1149,7 +1165,9 @@ class FirstPersonPointerLockControls extends PhysicsControls {
      * @param delta - The time delta for frame-independent movement.
      */
     updateControls(delta) {
-        const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        let speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        if (this.enableAcceleration && keyStates$3.accelerate)
+            speedDelta *= this.accelerationFactor;
         // Move
         let movement;
         if (this.enableDiagonalMovement)
@@ -1240,7 +1258,7 @@ class FirstPersonPointerLockControls extends PhysicsControls {
 
 class PhysicsCharacterControls extends PhysicsControls {
     constructor(object, domElement, world, animationOptions = {}, physicsOptions = {}) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         super(object, domElement, world, physicsOptions);
         this._animationClips = {};
         this._animationActions = {};
@@ -1257,6 +1275,7 @@ class PhysicsCharacterControls extends PhysicsControls {
         this.transitionDelay = (_b = animationOptions.transitionDelay) !== null && _b !== void 0 ? _b : 0.3;
         this.fallSpeedThreshold = (_c = animationOptions.fallSpeedThreshold) !== null && _c !== void 0 ? _c : 15;
         this.moveSpeedThreshold = (_d = animationOptions.moveSpeedThreshold) !== null && _d !== void 0 ? _d : 1;
+        this.runSpeedThreshold = (_e = animationOptions.runSpeedThreshold) !== null && _e !== void 0 ? _e : 5;
     }
     /**
      * Returns a read-only copy of the animation clips.
@@ -1328,14 +1347,26 @@ class PhysicsCharacterControls extends PhysicsControls {
     _updateAnimation() {
         const worldQuaternion = this.object.getWorldQuaternion(this._worldQuaternion);
         this._localVelocity.copy(this.velocity).applyQuaternion(worldQuaternion.invert());
+        if (this.isGrounded && this._localVelocity.z > this.runSpeedThreshold && this._animationActions.runForward) {
+            return this._fadeToAction('runForward', this.transitionTime);
+        }
         if (this.isGrounded && this._localVelocity.z > this.moveSpeedThreshold) {
             return this._fadeToAction('forward', this.transitionTime);
+        }
+        if (this.isGrounded && this._localVelocity.z < -this.runSpeedThreshold && this._animationActions.runBackward) {
+            return this._fadeToAction('runBackward', this.transitionTime);
         }
         if (this.isGrounded && this._localVelocity.z < -this.moveSpeedThreshold) {
             return this._fadeToAction('backward', this.transitionTime);
         }
+        if (this.isGrounded && this._localVelocity.x > this.runSpeedThreshold && this._animationActions.runLeftward) {
+            return this._fadeToAction('runLeftward', this.transitionTime);
+        }
         if (this.isGrounded && this._localVelocity.x > this.moveSpeedThreshold) {
             return this._fadeToAction('leftward', this.transitionTime);
+        }
+        if (this.isGrounded && this._localVelocity.x < -this.runSpeedThreshold && this._animationActions.runRightward) {
+            return this._fadeToAction('runRightward', this.transitionTime);
         }
         if (this.isGrounded && this._localVelocity.x < -this.moveSpeedThreshold) {
             return this._fadeToAction('rightward', this.transitionTime);
@@ -1377,6 +1408,7 @@ const keyStates$2 = {
     leftward: 0,
     rightward: 0,
     jump: 0,
+    accelerate: 0,
 };
 const DEFAULT_ACTION_KEYS$2 = {
     forward: ['KeyW', 'ArrowUp'],
@@ -1384,13 +1416,14 @@ const DEFAULT_ACTION_KEYS$2 = {
     leftward: ['KeyA', 'ArrowLeft'],
     rightward: ['KeyD', 'ArrowRight'],
     jump: ['Space'],
+    accelerate: ['ShiftLeft'],
 };
 /**
  * Controls class that allows movement with the keyboard and rotation with the mouse.
  */
 class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
     constructor({ object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions, physicsOptions, }) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
         super(object, domElement, worldObject, animationOptions, physicsOptions);
         this._spherical = new three.Spherical(); // Spherical coordinates for camera position
         this._isMouseDown = false; // Flag to track mouse down state
@@ -1450,6 +1483,8 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
         this.rotateSpeed = (_k = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _k !== void 0 ? _k : 1;
         this.enableDiagonalMovement = (_l = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableDiagonalMovement) !== null && _l !== void 0 ? _l : true;
         this.enableRotationOnMove = (_m = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableRotationOnMove) !== null && _m !== void 0 ? _m : true;
+        this.enableAcceleration = (_o = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableAcceleration) !== null && _o !== void 0 ? _o : true;
+        this.accelerationFactor = (_p = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.accelerationFactor) !== null && _p !== void 0 ? _p : 1.5;
         // Bind key event handlers.
         this.onKeyDown = this._onKeyDown.bind(this);
         this.onKeyUp = this._onKeyUp.bind(this);
@@ -1526,7 +1561,9 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
      * @param delta - Time delta for frame-independent movement.
      */
     updateControls(delta) {
-        const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        let speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        if (this.enableAcceleration && keyStates$2.accelerate)
+            speedDelta *= this.accelerationFactor;
         let movement;
         if (this.enableDiagonalMovement)
             movement = this._accumulateDirection();
@@ -1637,6 +1674,7 @@ const keyStates$1 = {
     leftward: 0,
     rightward: 0,
     jump: 0,
+    accelerate: 0,
 };
 const DEFAULT_ACTION_KEYS$1 = {
     forward: ['KeyW', 'ArrowUp'],
@@ -1644,13 +1682,14 @@ const DEFAULT_ACTION_KEYS$1 = {
     leftward: ['KeyA', 'ArrowLeft'],
     rightward: ['KeyD', 'ArrowRight'],
     jump: ['Space'],
+    accelerate: ['ShiftLeft'],
 };
 /**
  * Controls class that allows movement with the keyboard and rotation with the mouse.
  */
 class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
     constructor({ object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions, physicsOptions, }) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
         super(object, domElement, worldObject, animationOptions, physicsOptions);
         this._spherical = new three.Spherical(); // Spherical coordinates for camera position
         this._keyCount = 0; // Number of keys currently pressed
@@ -1706,6 +1745,8 @@ class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
         this.rotateSpeed = (_k = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _k !== void 0 ? _k : 1;
         this.enableDiagonalMovement = (_l = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableDiagonalMovement) !== null && _l !== void 0 ? _l : true;
         this.enableRotationOnMove = (_m = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableRotationOnMove) !== null && _m !== void 0 ? _m : true;
+        this.enableAcceleration = (_o = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableAcceleration) !== null && _o !== void 0 ? _o : true;
+        this.accelerationFactor = (_p = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.accelerationFactor) !== null && _p !== void 0 ? _p : 1.5;
         // Bind key event handlers.
         this.onKeyDown = this._onKeyDown.bind(this);
         this.onKeyUp = this._onKeyUp.bind(this);
@@ -1781,7 +1822,9 @@ class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
      * @param delta - Time delta for frame-independent movement.
      */
     updateControls(delta) {
-        const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        let speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        if (this.enableAcceleration && keyStates$1.accelerate)
+            speedDelta *= this.accelerationFactor;
         let movement;
         if (this.enableDiagonalMovement)
             movement = this._accumulateDirection();
@@ -1894,6 +1937,7 @@ const keyStates = {
     turnDown: 0,
     turnLeft: 0,
     turnRight: 0,
+    accelerate: 0,
 };
 const DEFAULT_ACTION_KEYS = {
     forward: ['KeyW'],
@@ -1905,13 +1949,14 @@ const DEFAULT_ACTION_KEYS = {
     turnDown: ['ArrowDown'],
     turnLeft: ['ArrowLeft'],
     turnRight: ['ArrowRight'],
+    accelerate: ['ShiftLeft'],
 };
 /**
  * Controls class that allows movement with the keyboard and rotation with the camera.
  */
 class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
     constructor({ object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions, physicsOptions, }) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
         super(object, domElement, worldObject, animationOptions, physicsOptions);
         this._spherical = new three.Spherical();
         this._keyCount = 0;
@@ -1953,6 +1998,8 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
         this.rotateSpeed = (_k = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.rotateSpeed) !== null && _k !== void 0 ? _k : 1;
         this.enableDiagonalMovement = (_l = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableDiagonalMovement) !== null && _l !== void 0 ? _l : true;
         this.enableRotationOnMove = (_m = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableRotationOnMove) !== null && _m !== void 0 ? _m : true;
+        this.enableAcceleration = (_o = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.enableAcceleration) !== null && _o !== void 0 ? _o : true;
+        this.accelerationFactor = (_p = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.accelerationFactor) !== null && _p !== void 0 ? _p : 1.5;
         this.onKeyDown = this._onKeyDown.bind(this);
         this.onKeyUp = this._onKeyUp.bind(this);
         this.onMouseWheel = this._onMouseWheel.bind(this);
@@ -2024,7 +2071,9 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
      * @param delta - Time delta for frame-independent movement.
      */
     updateControls(delta) {
-        const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        let speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+        if (this.enableAcceleration && keyStates.accelerate)
+            speedDelta *= this.accelerationFactor;
         let movement;
         if (this.enableDiagonalMovement)
             movement = this._accumulateDirection();
@@ -2076,12 +2125,7 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
         this._spherical.phi = Math.max(0.01, Math.min(Math.PI - 0.01, this._spherical.phi));
         // Update camera position with lerp
         this._cameraLookAtPosition.copy(this.object.position).add(this.cameraLookAtOffset);
-        if (this.cameraLerpFactor > 0) {
-            this._cameraLerpPosition.lerp(this._cameraLookAtPosition, this.cameraLerpFactor);
-        }
-        else {
-            this._cameraLerpPosition.copy(this._cameraLookAtPosition);
-        }
+        this._cameraLerpPosition.lerp(this._cameraLookAtPosition, this.cameraLerpFactor);
         this._spherical.radius = this.cameraPositionOffset.distanceTo(this.cameraLookAtOffset);
         this.camera.position.setFromSpherical(this._spherical).add(this._cameraLerpPosition);
         this.camera.lookAt(this._cameraLookAtPosition);

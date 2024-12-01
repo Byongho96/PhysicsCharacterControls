@@ -3,7 +3,7 @@ import { PhysicsControls, PhysicsOptions } from './PhysicsControls';
 /**
  * Animation states that can be used.
  */
-type Animations = 'idle' | 'forward' | 'backward' | 'rightward' | 'leftward' | 'jump' | 'fall';
+type Animations = 'idle' | 'forward' | 'backward' | 'rightward' | 'leftward' | 'runForward' | 'runBackward' | 'runRightward' | 'runLeftward' | 'jump' | 'fall';
 /**
  * Configuration for animations and their options.
  */
@@ -13,6 +13,7 @@ export type AnimationOptions = {
     transitionDelay?: number;
     fallSpeedThreshold?: number;
     moveSpeedThreshold?: number;
+    runSpeedThreshold?: number;
 };
 declare class PhysicsCharacterControls extends PhysicsControls {
     private _mixer;
@@ -23,6 +24,7 @@ declare class PhysicsCharacterControls extends PhysicsControls {
     transitionDelay: number;
     fallSpeedThreshold: number;
     moveSpeedThreshold: number;
+    runSpeedThreshold: number;
     private _localVelocity;
     private _worldQuaternion;
     constructor(object: Object3D, domElement: HTMLElement | null, world: Object3D, animationOptions?: AnimationOptions, physicsOptions?: PhysicsOptions);
