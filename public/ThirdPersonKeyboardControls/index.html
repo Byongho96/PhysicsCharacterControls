@@ -9,7 +9,7 @@
   <body>
     <div id="info">
       Physics character controls demo <br />
-      WASD to move, Click and move mouse to rotate and SPACE to jump
+      WASD to move, Arrow Keys to rotate and SPACE to jump
     </div>
     <div id="container"></div>
 
@@ -30,7 +30,7 @@
 
       import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-      import { ThirdPersonPointerLockControls } from 'physics-character-controls';
+      import { ThirdPersonKeyboardControls } from 'physics-character-controls';
       import { PhysicsControlsHelper } from 'physics-character-controls';
 
       const container = document.getElementById('container');
@@ -55,7 +55,7 @@
         gltfLoader.loadAsync('../assets/animations/jump.glb'),
         gltfLoader.loadAsync('../assets/animations/fall.glb'),
       ]).then(([world, character, idle, forward, backward, leftward, rightward, jump, fall]) => {
-      scene.add(world.scene);
+        scene.add(world.scene);
         world.scene.traverse(child => {
           if (child.isMesh) {
             child.castShadow = true;
@@ -73,7 +73,7 @@
           }
         });
 
-        controls = new ThirdPersonPointerLockControls({
+        controls = new ThirdPersonKeyboardControls({
           object : character.scene,
           domElement:renderer.domElement,
           worldObject:world.scene,
@@ -146,7 +146,7 @@
         folder4.add(controls, 'moveSpeedThreshold', 0, 2).name('move speed threshold').listen();
         folder4.add(controls, 'fallSpeedThreshold', 1, 30).name('fall speed threshold').listen();
         folder4.add(controls, 'transitionTime', 0, 1).name('transition time').listen();
-      });
+     });
 
       // Scene
       const scene = new THREE.Scene();

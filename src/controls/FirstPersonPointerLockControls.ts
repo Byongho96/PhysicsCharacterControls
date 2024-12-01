@@ -2,18 +2,9 @@ import { Object3D, OrthographicCamera, PerspectiveCamera, Vector3 } from 'three'
 import { PhysicsControls, PhysicsOptions } from './base/PhysicsControls';
 
 /**
- * Actions that can be performed via keyboard input.
+ * Possible actions that can be mapped to keyboard inputs.
  */
-type Actions =
-  | 'forward'
-  | 'backward'
-  | 'leftward'
-  | 'rightward'
-  | 'turnLeft'
-  | 'turnRight'
-  | 'turnUp'
-  | 'turnDown'
-  | 'jump';
+type Actions = 'forward' | 'backward' | 'leftward' | 'rightward' | 'jump';
 
 /**
  * Configuration for key mappings to actions.
@@ -31,9 +22,9 @@ type CameraOptions = {
 };
 
 /**
- * Extended physics options specific to keyboard controls.
+ * Extended physics options specific to pointer lock controls.
  */
-type KeyboardPhysicsOptions = PhysicsOptions & {
+type PointerLockPhysicsOptions = PhysicsOptions & {
   eyeHeight?: number;
   jumpForce?: number; // Force applied when jumping
   groundMoveSpeed?: number; // Speed when moving on the ground
@@ -42,12 +33,12 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
   enableDiagonalMovement?: boolean;
 };
 
-type KeyboardControlsProps = {
+type PointerLockControlsProps = {
   object: Object3D;
   domElement: HTMLElement | null;
   worldObject: Object3D;
   actionKeys?: ActionKeys;
-  physicsOptions?: KeyboardPhysicsOptions;
+  physicsOptions?: PointerLockPhysicsOptions;
   cameraOptions?: CameraOptions;
 };
 
@@ -59,30 +50,21 @@ const keyStates: Record<Actions, number> = {
   backward: 0,
   leftward: 0,
   rightward: 0,
-  turnUp: 0,
-  turnDown: 0,
-  turnLeft: 0,
-  turnRight: 0,
   jump: 0,
 };
 
 const DEFAULT_ACTION_KEYS: ActionKeys = {
-  forward: ['KeyW'],
-  backward: ['KeyS'],
-  leftward: ['KeyA'],
-  rightward: ['KeyD'],
+  forward: ['KeyW', 'ArrowUp'],
+  backward: ['KeyS', 'ArrowDown'],
+  leftward: ['KeyA', 'ArrowLeft'],
+  rightward: ['KeyD', 'ArrowRight'],
   jump: ['Space'],
-  turnUp: ['ArrowUp'],
-  turnDown: ['ArrowDown'],
-  turnLeft: ['ArrowLeft'],
-  turnRight: ['ArrowRight'],
 };
 
 /**
- * FirstPersonKeyboardControls class allows controlling a 3D object using the keyboard,
+ * FirstPersonPointerLockControls class allows controlling a 3D object using the Pointer Lock API and mouse input.
  */
-class FirstPersonKeyboardControls extends PhysicsControls {
-  // Character animations
+class FirstPersonPointerLockControls extends PhysicsControls {
   actionKeys: ActionKeys;
 
   enableZoom: boolean;
@@ -104,12 +86,21 @@ class FirstPersonKeyboardControls extends PhysicsControls {
   private _accumulatedDirection: Vector3 = new Vector3();
   private _worldYDirection: Vector3 = new Vector3(0, 1, 0);
 
-  // Handlers for keyboard events.
+  // Handlers for events.
   private onKeyDown: (event: KeyboardEvent) => void;
   private onKeyUp: (event: KeyboardEvent) => void;
+  private onMouseMove: (event: MouseEvent) => void;
+  private onMouseDown: (event: MouseEvent) => void;
   private onMouseWheel: (event: WheelEvent) => void;
 
-  constructor({ object, domElement, worldObject, actionKeys, cameraOptions, physicsOptions }: KeyboardControlsProps) {
+  constructor({
+    object,
+    domElement,
+    worldObject,
+    actionKeys,
+    cameraOptions,
+    physicsOptions,
+  }: PointerLockControlsProps) {
     super(object, domElement, worldObject, {
       colliderHeight: 1.6,
       colliderRadius: 0.5,
@@ -124,18 +115,20 @@ class FirstPersonKeyboardControls extends PhysicsControls {
     // Set physics parameters with defaults if not provided.
     this.eyeHeight = physicsOptions?.eyeHeight ?? 1.5;
     this.jumpForce = physicsOptions?.jumpForce ?? 15;
-    this.groundMoveSpeed = physicsOptions?.groundMoveSpeed ?? 30;
+    this.groundMoveSpeed = physicsOptions?.groundMoveSpeed ?? 25;
     this.floatMoveSpeed = physicsOptions?.floatMoveSpeed ?? 8;
-    this.rotateSpeed = physicsOptions?.rotateSpeed ?? 1;
+    this.rotateSpeed = physicsOptions?.rotateSpeed ?? 0.2;
 
     this.enableDiagonalMovement = physicsOptions?.enableDiagonalMovement ?? true;
 
     // Bind key event handlers.
     this.onKeyDown = this._onKeyDown.bind(this);
     this.onKeyUp = this._onKeyUp.bind(this);
+    this.onMouseMove = this._onMouseMove.bind(this);
+    this.onMouseDown = this._onMouseDown.bind(this);
     this.onMouseWheel = this._onMouseWheel.bind(this);
 
-    // Connect controls to key events.
+    // Connect controls to pointer lock events.
     this.connect();
   }
 
@@ -212,7 +205,7 @@ class FirstPersonKeyboardControls extends PhysicsControls {
   }
 
   /**
-   * Updates movement and rotation based on the current keyboard input.
+   * Updates movement based on physics and camera rotation.
    * @param delta - The time delta for frame-independent movement.
    */
   private updateControls(delta: number) {
@@ -225,25 +218,6 @@ class FirstPersonKeyboardControls extends PhysicsControls {
 
     this.velocity.add(movement.multiplyScalar(speedDelta));
 
-    // Turn
-    if (keyStates.turnLeft) {
-      this.object.rotateOnWorldAxis(this._worldYDirection, this.rotateSpeed * delta);
-    }
-
-    if (keyStates.turnRight) {
-      this.object.rotateOnWorldAxis(this._worldYDirection, -this.rotateSpeed * delta);
-    }
-
-    if (keyStates.turnUp) {
-      this.object.rotateX(this.rotateSpeed * delta);
-    }
-
-    if (keyStates.turnDown) {
-      this.object.rotateX(-this.rotateSpeed * delta);
-    }
-
-    this.object.rotation.x = Math.min(Math.max(this.object.rotation.x, -Math.PI / 2), Math.PI / 2);
-
     // Jump if grounded.
     if (keyStates.jump && this.isGrounded) {
       this.velocity.y = this.jumpForce;
@@ -253,7 +227,7 @@ class FirstPersonKeyboardControls extends PhysicsControls {
   }
 
   /**
-   * Main update function that integrates controls, physics, camera, and animations.
+   * Main update function that integrates controls, physics, and camera.
    * @param delta - The time delta for consistent updates.
    */
   update(delta: number) {
@@ -265,29 +239,33 @@ class FirstPersonKeyboardControls extends PhysicsControls {
   }
 
   /**
-   * Connects the keyboard controls by adding event listeners.
+   * Connects the pointer lock controls by adding event listeners.
    */
   connect() {
     super.connect();
 
-    document.addEventListener('keydown', this.onKeyDown);
-    document.addEventListener('keyup', this.onKeyUp);
+    window.addEventListener('keydown', this.onKeyDown);
+    window.addEventListener('keyup', this.onKeyUp);
+    this.domElement?.addEventListener('click', this.onMouseDown);
+    this.domElement?.addEventListener('mousemove', this.onMouseMove);
     this.domElement?.addEventListener('wheel', this.onMouseWheel);
   }
 
   /**
-   * Disconnects the keyboard controls by removing event listeners.
+   * Disconnects the pointer lock controls by removing event listeners.
    */
   disconnect() {
     super.disconnect();
 
-    document.removeEventListener('keydown', this.onKeyDown);
-    document.removeEventListener('keyup', this.onKeyUp);
+    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyUp);
+    this.domElement?.removeEventListener('click', this.onMouseDown);
+    this.domElement?.removeEventListener('mousemove', this.onMouseMove);
     this.domElement?.removeEventListener('wheel', this.onMouseWheel);
   }
 
   /**
-   * Disposes of the keyboard controls, cleaning up event listeners and animations.
+   * Disposes of the pointer lock controls, cleaning up event listeners and animations.
    */
   dispose() {
     this.disconnect();
@@ -315,6 +293,23 @@ class FirstPersonKeyboardControls extends PhysicsControls {
     }
   }
 
+  /**
+   * Requests pointer lock on the DOM element.
+   */
+  private _onMouseDown() {
+    this.domElement?.requestPointerLock();
+  }
+
+  /** Handles mousemove events to update camera angles with separate clamping for upward and downward movements. */
+  private _onMouseMove(event: MouseEvent) {
+    if (document.pointerLockElement !== this.domElement) return;
+
+    this.object.rotation.y -= (event.movementX * this.rotateSpeed) / 100;
+    this.object.rotation.x -= (event.movementY * this.rotateSpeed) / 100;
+
+    this.object.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.object.rotation.x));
+  }
+
   private _onMouseWheel = (event: WheelEvent) => {
     if (!this.enableZoom) return;
 
@@ -333,4 +328,4 @@ class FirstPersonKeyboardControls extends PhysicsControls {
   };
 }
 
-export { FirstPersonKeyboardControls };
+export { FirstPersonPointerLockControls };

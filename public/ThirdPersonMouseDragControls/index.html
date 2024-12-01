@@ -48,10 +48,13 @@
         gltfLoader.loadAsync('../assets/models/collision-world.glb'),
         gltfLoader.loadAsync('../assets/models/x_bot.glb'),
         gltfLoader.loadAsync('../assets/animations/idle.glb'),
-        gltfLoader.loadAsync('../assets/animations/running.glb'),
-        gltfLoader.loadAsync('../assets/animations/jumping.glb'),
-        gltfLoader.loadAsync('../assets/animations/falling.glb'),
-      ]).then(([world, character, idle, walking, jumping, falling]) => {
+        gltfLoader.loadAsync('../assets/animations/run_forward.glb'),
+        gltfLoader.loadAsync('../assets/animations/run_backward.glb'),
+        gltfLoader.loadAsync('../assets/animations/run_leftward.glb'),
+        gltfLoader.loadAsync('../assets/animations/run_rightward.glb'),
+        gltfLoader.loadAsync('../assets/animations/jump.glb'),
+        gltfLoader.loadAsync('../assets/animations/fall.glb'),
+      ]).then(([world, character, idle, forward, backward, leftward, rightward, jump, fall]) => {
         scene.add(world.scene);
         world.scene.traverse(child => {
           if (child.isMesh) {
@@ -70,31 +73,23 @@
           }
         });
 
-        controls = new ThirdPersonMouseDragControls(
-          character.scene,
-          renderer.domElement,
-          world.scene,
-          camera,
-          {
-            forward: ['ArrowUp', 'w'],
-            backward: ['ArrowDown', 's'],
-            leftward: ['ArrowLeft', 'a'],
-            rightward: ['ArrowRight', 'd'],
-            jump: [' '],
-          },
-          {
-            posOffset: new THREE.Vector3(0, 2, -2),
-            lookAtOffset: new THREE.Vector3(0, 1, 0),
-          },
-          {
+        controls = new ThirdPersonMouseDragControls({
+          object: character.scene,
+          domElement: renderer.domElement,
+          worldObject: world.scene,
+          camera: camera,
+          animationOptions: {
             animationClips: {
               idle: idle.animations[0],
-              forward: walking.animations[0],
-              jump: jumping.animations[0],
-              fall: falling.animations[0],
+              forward: forward.animations[0],
+              backward: backward.animations[0],
+              leftward: leftward.animations[0],
+              rightward: rightward.animations[0],
+              jump: jump.animations[0],
+              fall: fall.animations[0],
             },
           },
-          {
+          physicsOptions: {
             boundary: {
               resetPoint: new THREE.Vector3(0, 0, 0),
               x: {
@@ -110,8 +105,8 @@
                 max: 30,
               },
             },
-          },
-        );
+          }
+        })
 
         helpers = new PhysicsControlsHelper(controls, 0xffffff);
         helpers.visible = false;
@@ -123,30 +118,34 @@
 
         // GUI - Physics
         const folder2 = gui.addFolder('Physics');
-        folder2.add(controls, 'groundMoveSpeed', 0, 40).name('ground move speed').listen();
-        folder2.add(controls, 'floatMoveSpeed', 0, 20).name('float move speed').listen();
-        folder2.add(controls, 'rotateSpeed', 0, 2).name('rotate speed').listen();
-        folder2.add(controls, 'jumpForce', 0, 30).name('jump force').listen();
         folder2.add(controls, 'gravity', 0, 50).name('gravity').listen();
-        folder2.add(controls, 'maxFallSpeed', 0, 40).name('max fall speed').listen();
+        folder2.add(controls, 'jumpForce', 0, 30).name('jump force').listen();
+        folder2.add(controls, 'groundMoveSpeed', 0, 50).name('move speed').listen();
+        folder2.add(controls, 'rotateSpeed', 0, 5).name('rotate speed').listen();
         folder2.add(controls, 'movementResistance', 0, 10).name('resistance').listen();
-
-        // GUI - Animation
-        const folder3 = gui.addFolder('Animation');
-        folder3.add(controls, 'moveSpeedThreshold', 1, 10).name('move speed threshold').listen();
-        folder3.add(controls, 'fallSpeedThreshold', 1, 30).name('fall speed threshold').listen();
-        folder3.add(controls, 'transitionTime', 0, 1).name('transition time').listen();
+        folder2.add(controls, 'enableDiagonalMovement').name('diagonal movement').listen();
+        folder2.add(controls, 'enableRotationOnMove').name('rotation on move').listen();
 
         // GUI - Camera
-        const folder4 = gui.addFolder('Camera');
-        const cameraPosition = folder4.addFolder('Position');
-        cameraPosition.add(controls.cameraPosOffset, 'x', -10, 10).name('x').listen();
-        cameraPosition.add(controls.cameraPosOffset, 'y', -10, 10).name('y').listen();
-        cameraPosition.add(controls.cameraPosOffset, 'z', -10, 10).name('z').listen();
-        const cameraLookAt = folder4.addFolder('LookAt');
+        const folder3 = gui.addFolder('Camera');
+        const cameraPosition = folder3.addFolder('position offset').close();
+        cameraPosition.add(controls.cameraPositionOffset, 'x', -10, 10).name('x').listen();
+        cameraPosition.add(controls.cameraPositionOffset, 'y', -10, 10).name('y').listen();
+        cameraPosition.add(controls.cameraPositionOffset, 'z', -10, 10).name('z').listen();
+        const cameraLookAt = folder3.addFolder('look at offset').close();
         cameraLookAt.add(controls.cameraLookAtOffset, 'x', -10, 10).name('x').listen();
         cameraLookAt.add(controls.cameraLookAtOffset, 'y', -10, 10).name('y').listen();
         cameraLookAt.add(controls.cameraLookAtOffset, 'z', -10, 10).name('z').listen();
+        folder3.add(controls, 'enableZoom').name('enable zoom').listen();
+        folder3.add(controls, 'zoomSpeed', 0, 3).name('zoom speed').listen();
+        folder3.add(controls, 'axisSync', ['always', 'move', 'never']).name('axis sync');
+        folder3.add(controls, 'cameraLerpFactor', 0, 1).name('lerp factor').listen();
+
+        // GUI - Animation
+        const folder4 = gui.addFolder('Animation');
+        folder4.add(controls, 'moveSpeedThreshold', 0, 2).name('move speed threshold').listen();
+        folder4.add(controls, 'fallSpeedThreshold', 1, 30).name('fall speed threshold').listen();
+        folder4.add(controls, 'transitionTime', 0, 1).name('transition time').listen();
       });
 
       // Scene
