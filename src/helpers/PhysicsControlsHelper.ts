@@ -38,7 +38,6 @@ class PhysicsControlsHelper extends Group {
       controls.collider.height - 2 * controls.collider.radius,
     );
     this.capsuleHelper = new LineSegments(capsuleGeometry, new LineBasicMaterial({ color: color, toneMapped: false }));
-    this.capsuleHelper.frustumCulled = false;
     this.add(this.capsuleHelper);
 
     // Create box geometry to visualize the boundary if it is set.

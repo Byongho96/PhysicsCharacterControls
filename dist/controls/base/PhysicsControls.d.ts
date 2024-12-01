@@ -9,7 +9,6 @@ export interface PhysicsControlsEventMap {
      * Fires when the collider has collided with the world.
      */
     collide: {
-        position: Vector3;
         normal: Vector3;
     };
 }
@@ -55,7 +54,6 @@ declare class PhysicsControls extends Controls<PhysicsControlsEventMap> {
     boundary?: Boundary;
     private _isGrounded;
     private _deltaVelocity;
-    private _collisionPosition;
     /**
      * Constructs a new PhysicsControls instance.
      * @param object - The 3D object to apply physics controls to.

@@ -11,6 +11,13 @@ type ActionKeys = {
     [K in Actions]?: string[];
 };
 /**
+ * Configuration options for camera control.
+ */
+type CameraOptions = {
+    enableZoom?: boolean;
+    zoomSpeed?: number;
+};
+/**
  * Extended physics options specific to keyboard controls.
  */
 type KeyboardPhysicsOptions = PhysicsOptions & {
@@ -19,40 +26,49 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
     groundMoveSpeed?: number;
     floatMoveSpeed?: number;
     rotateSpeed?: number;
+    enableDiagonalMovement?: boolean;
+};
+type KeyboardControlsProps = {
+    object: Object3D;
+    domElement: HTMLElement | null;
+    worldObject: Object3D;
+    actionKeys?: ActionKeys;
+    physicsOptions?: KeyboardPhysicsOptions;
+    cameraOptions?: CameraOptions;
 };
 /**
  * FirstPersonKeyboardControls class allows controlling a 3D object using the keyboard,
  */
 declare class FirstPersonKeyboardControls extends PhysicsControls {
     actionKeys: ActionKeys;
+    enableZoom: boolean;
+    zoomSpeed: number;
     eyeHeight: number;
     jumpForce: number;
     groundMoveSpeed: number;
     floatMoveSpeed: number;
     rotateSpeed: number;
-    private _objectWorldDirection;
+    enableDiagonalMovement: boolean;
+    private _keyCount;
+    private _objectLocalDirection;
+    private _accumulatedDirection;
     private _worldYDirection;
-    private onKeyDownHandler;
-    private onKeyUpHandler;
-    /**
-     * Constructs a new FirstPersonKeyboardControls  instance.
-     * @param object - The 3D object to control.
-     * @param domElement - The HTML element for event listeners (optional).
-     * @param worldObject - The world object used for physics collision.
-     * @param actionKeys - Key mappings for actions.
-     * @param physicsOptions - Physics configuration options (optional).
-     */
-    constructor(object: Object3D, domElement: HTMLElement | null, worldObject: Object3D, actionKeys: ActionKeys, physicsOptions?: KeyboardPhysicsOptions);
+    private onKeyDown;
+    private onKeyUp;
+    private onMouseWheel;
+    constructor({ object, domElement, worldObject, actionKeys, cameraOptions, physicsOptions }: KeyboardControlsProps);
     /**
      * Retrieves the forward _objectWorldDirection vector of the object, ignoring the Y-axis.
      * @returns A normalized Vector3 representing the forward _objectWorldDirection.
      */
-    private getForwardVector;
+    private _getForwardVector;
     /**
      * Gets the side (right) direction vector based on the camera's orientation.
      * @returns Normalized side vector.
      */
-    private getSideVector;
+    private _getSideVector;
+    private _accumulateDirection;
+    private _getMostRecentDirection;
     /**
      * Updates movement and rotation based on the current keyboard input.
      * @param delta - The time delta for frame-independent movement.
@@ -75,15 +91,10 @@ declare class FirstPersonKeyboardControls extends PhysicsControls {
      * Disposes of the keyboard controls, cleaning up event listeners and animations.
      */
     dispose(): void;
-    /**
-     * Handles keydown events, updating the key state.
-     * @param event - The keyboard event.
-     */
-    private onKeyDown;
-    /**
-     * Handles keyup events, updating the key state.
-     * @param event - The keyboard event.
-     */
-    private onKeyUp;
+    /** Handles keydown events, updating the key state. */
+    private _onKeyDown;
+    /** Handles keyup events, updating the key state. */
+    private _onKeyUp;
+    private _onMouseWheel;
 }
 export { FirstPersonKeyboardControls };

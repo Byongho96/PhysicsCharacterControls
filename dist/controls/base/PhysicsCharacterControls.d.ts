@@ -10,6 +10,7 @@ type Animations = 'idle' | 'forward' | 'backward' | 'rightward' | 'leftward' | '
 export type AnimationOptions = {
     animationClips?: Partial<Record<Animations, AnimationClip>>;
     transitionTime?: number;
+    transitionDelay?: number;
     fallSpeedThreshold?: number;
     moveSpeedThreshold?: number;
 };
@@ -19,6 +20,7 @@ declare class PhysicsCharacterControls extends PhysicsControls {
     private _animationClips;
     private _animationActions;
     transitionTime: number;
+    transitionDelay: number;
     fallSpeedThreshold: number;
     moveSpeedThreshold: number;
     private _localVelocity;

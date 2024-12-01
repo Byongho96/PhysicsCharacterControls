@@ -15,9 +15,12 @@ type ActionKeys = {
  * Configuration options for camera control.
  */
 type CameraOptions = {
+    posOffset?: Vector3;
+    lookAtOffset?: Vector3;
+    cameraLerpFactor?: number;
     axisSync?: 'always' | 'move' | 'never';
-    posOffset: Vector3;
-    lookAtOffset: Vector3;
+    enableZoom?: boolean;
+    zoomSpeed?: number;
 };
 /**
  * Extended physics options specific to mouse drag controls.
@@ -27,64 +30,68 @@ type PointerLockPhysicsOptions = PhysicsOptions & {
     groundMoveSpeed?: number;
     floatMoveSpeed?: number;
     rotateSpeed?: number;
+    enableDiagonalMovement?: boolean;
+    enableRotationOnMove?: boolean;
+};
+type PointerLockControlsProps = {
+    object: Object3D;
+    domElement: HTMLElement | null;
+    worldObject: Object3D;
+    camera: Camera;
+    actionKeys?: ActionKeys;
+    cameraOptions?: CameraOptions;
+    animationOptions?: AnimationOptions;
+    physicsOptions?: PointerLockPhysicsOptions;
 };
 /**
  * Controls class that allows movement with the keyboard and rotation with the mouse.
  */
 declare class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
-    camera: Camera;
-    private _cameraPositionOffset;
-    private _cameraLookAtOffset;
-    private _spherical;
-    axisSync: 'always' | 'move' | 'never';
     actionKeys: ActionKeys;
+    camera: Camera;
+    cameraPositionOffset: Vector3;
+    cameraLookAtOffset: Vector3;
+    cameraLerpFactor: number;
+    axisSync: 'always' | 'move' | 'never';
+    enableZoom: boolean;
+    zoomSpeed: number;
     jumpForce: number;
     groundMoveSpeed: number;
     floatMoveSpeed: number;
     rotateSpeed: number;
-    private _objectWorldDirection;
+    enableDiagonalMovement: boolean;
+    enableRotationOnMove: boolean;
+    private _spherical;
+    private _keyCount;
+    private _forwardDirection;
+    private _objectLocalDirection;
     private _accumulatedDirection;
     private _cameraLookAtPosition;
-    private _forwardDirection;
-    private onKeyDownHandler;
-    private onKeyUpHandler;
-    private onMouseDownHandler;
-    private onMouseMoveHandler;
-    /**
-     * Constructs a new ThirdPersonMouseDragControls instance.
-     * @param object - The 3D object to control.
-     * @param domElement - The HTML element to attach event listeners to.
-     * @param worldObject - The world object used for collision detection.
-     * @param actionKeys - Key mappings for actions.
-     * @param cameraOptions - Configuration options for the camera.
-     * @param animationOptions - Animation clips and options.
-     * @param physicsOptions - Physics options.
-     */
-    constructor(object: Object3D, domElement: HTMLElement | null, worldObject: Object3D, camera: Camera, actionKeys: ActionKeys, cameraOptions: CameraOptions, animationOptions?: AnimationOptions, physicsOptions?: PointerLockPhysicsOptions);
-    get cameraPosOffset(): Vector3;
-    set cameraPosOffset(offset: Vector3);
-    get cameraLookAtOffset(): Vector3;
-    set cameraLookAtOffset(offset: Vector3);
-    /**
-     * Updates the camera's spherical coordinates based on the current offsets.
-     */
-    private updateCameraInfo;
+    private _cameraLerpPosition;
+    private onKeyDown;
+    private onKeyUp;
+    private onMouseDown;
+    private onMouseMove;
+    private onMouseWheel;
+    constructor({ object, domElement, worldObject, camera, actionKeys, cameraOptions, animationOptions, physicsOptions, }: PointerLockControlsProps);
     /**
      * Gets the forward direction vector based on the camera's orientation.
      * @returns Normalized forward vector.
      */
-    private getForwardVector;
+    private _getForwardVector;
     /**
      * Gets the side (right) direction vector based on the camera's orientation.
      * @returns Normalized side vector.
      */
-    private getSideVector;
-    private updateSync;
+    private _getSideVector;
+    private _accumulateDirection;
+    private _getMostRecentDirection;
     /**
      * Updates the object's velocity based on keyboard input.
      * @param delta - Time delta for frame-independent movement.
      */
     private updateControls;
+    private updateSync;
     /**
      * Updates the camera's position and orientation based on the object's position and mouse input.
      */
@@ -104,12 +111,14 @@ declare class ThirdPersonPointerLockControls extends PhysicsCharacterControls {
     disconnect(): void;
     dispose(): void;
     /** Handles keydown events, updating the key state. */
-    private onKeyDown;
+    private _onKeyDown;
     /** Handles keyup events, updating the key state. */
-    private onKeyUp;
+    private _onKeyUp;
     /** Handles mousedown events to lock pointer. */
-    private onMouseDown;
+    private _onMouseDown;
     /** Handles mousemove events to update camera angles when pointer is locked. */
-    private onMouseMove;
+    private _onMouseMove;
+    /** Handles mouse wheel events to zoom in and out. */
+    private _onMouseWheel;
 }
 export { ThirdPersonPointerLockControls };
