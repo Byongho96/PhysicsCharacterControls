@@ -13,7 +13,8 @@ type Actions =
   | 'turnRight'
   | 'turnUp'
   | 'turnDown'
-  | 'jump';
+  | 'jump'
+  | 'accelerate';
 
 /**
  * Configuration for key mappings to actions.
@@ -40,6 +41,8 @@ type KeyboardPhysicsOptions = PhysicsOptions & {
   floatMoveSpeed?: number; // Speed when in the air
   rotateSpeed?: number; // Rotation speed
   enableDiagonalMovement?: boolean;
+  enableAcceleration?: boolean;
+  accelerationFactor?: number;
 };
 
 type FirstPersonKeyboardControlsProps = {
@@ -64,6 +67,7 @@ const keyStates: Record<Actions, number> = {
   turnLeft: 0,
   turnRight: 0,
   jump: 0,
+  accelerate: 0,
 };
 
 const DEFAULT_ACTION_KEYS: ActionKeys = {
@@ -76,6 +80,7 @@ const DEFAULT_ACTION_KEYS: ActionKeys = {
   turnDown: ['ArrowDown'],
   turnLeft: ['ArrowLeft'],
   turnRight: ['ArrowRight'],
+  accelerate: ['ShiftLeft'],
 };
 
 /**
@@ -96,6 +101,9 @@ class FirstPersonKeyboardControls extends PhysicsControls {
   rotateSpeed: number;
 
   enableDiagonalMovement: boolean;
+
+  enableAcceleration: boolean;
+  accelerationFactor: number;
 
   private _keyCount: number = 0;
 
@@ -136,6 +144,9 @@ class FirstPersonKeyboardControls extends PhysicsControls {
     this.rotateSpeed = physicsOptions?.rotateSpeed ?? 1;
 
     this.enableDiagonalMovement = physicsOptions?.enableDiagonalMovement ?? true;
+
+    this.enableAcceleration = physicsOptions?.enableAcceleration ?? true;
+    this.accelerationFactor = physicsOptions?.accelerationFactor ?? 1.5;
 
     // Bind key event handlers.
     this.onKeyDown = this._onKeyDown.bind(this);
@@ -223,7 +234,8 @@ class FirstPersonKeyboardControls extends PhysicsControls {
    * @param delta - The time delta for frame-independent movement.
    */
   private updateControls(delta: number) {
-    const speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+    let speedDelta = delta * (this.isGrounded ? this.groundMoveSpeed : this.floatMoveSpeed);
+    if (this.enableAcceleration && keyStates.accelerate) speedDelta *= this.accelerationFactor;
 
     // Move
     let movement: Vector3;
