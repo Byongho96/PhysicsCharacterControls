@@ -46,11 +46,6 @@
 
       Promise.all([
         gltfLoader.loadAsync('../assets/models/collision-world.glb'),
-        gltfLoader.loadAsync('../assets/animations/idle.glb'),
-        gltfLoader.loadAsync('../assets/animations/running.glb'),
-        gltfLoader.loadAsync('../assets/animations/running_backwards.glb'),
-        gltfLoader.loadAsync('../assets/animations/jumping.glb'),
-        gltfLoader.loadAsync('../assets/animations/falling.glb'),
       ]).then(([world, idle, running, runningBackwards, jumping, falling]) => {
         scene.add(world.scene);
         world.scene.traverse(child => {
@@ -60,20 +55,11 @@
           }
         });
 
-        controls = new FirstPersonPointerLockControls(
-          camera,
-          renderer.domElement,
-          world.scene,
-          {
-            forward: ['ArrowUp', 'w'],
-            backward: ['ArrowDown', 's'],
-            leftward: ['ArrowLeft', 'a'],
-            rightward: ['ArrowRight', 'd'],
-            jump: [' '],
-          },
-          {
-            colliderHeight: 1.5,
-            colliderRadius: 0.3,
+        controls = new FirstPersonPointerLockControls({
+          object: camera,
+          domElement: renderer.domElement,
+          worldObject: world.scene,
+          physicsOptions: {
             boundary: {
               resetPoint: new THREE.Vector3(0, 0, 0),
               x: {
@@ -90,7 +76,7 @@
               },
             },
           },
-        );
+        });
 
         helpers = new PhysicsControlsHelper(controls, 0xffffff);
         helpers.visible = false;
@@ -102,12 +88,17 @@
 
         // GUI - Physics
         const folder2 = gui.addFolder('Physics');
-        folder2.add(controls, 'groundMoveSpeed', 0, 40).name('ground move speed').listen();
-        folder2.add(controls, 'floatMoveSpeed', 0, 20).name('float move speed').listen();
-        folder2.add(controls, 'rotateSpeed', 0.001, 0.01).name('rotate speed').listen();
-        folder2.add(controls, 'jumpForce', 0, 30).name('jump force').listen();
         folder2.add(controls, 'gravity', 0, 50).name('gravity').listen();
-        folder2.add(controls, 'maxFallSpeed', 0, 40).name('max fall speed').listen();
+        folder2.add(controls, 'jumpForce', 0, 30).name('jump force').listen();
+        folder2.add(controls, 'groundMoveSpeed', 0, 50).name('move speed').listen();
+        folder2.add(controls, 'rotateSpeed', 0, 5).name('rotate speed').listen();
+        folder2.add(controls, 'movementResistance', 0, 10).name('resistance').listen();
+        folder2.add(controls, 'enableDiagonalMovement').name('diagonal movement').listen();
+
+        // GUI - Camera
+        const folder3 = gui.addFolder('Camera');
+        folder3.add(controls, 'enableZoom').name('enable zoom').listen();
+        folder3.add(controls, 'zoomSpeed', 0, 3).name('zoom speed').listen();
       });
 
       // Scene
