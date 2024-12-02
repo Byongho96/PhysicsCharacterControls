@@ -58,7 +58,8 @@
         gltfLoader.loadAsync('../assets/animations/run_rightward_fast.glb'),
         gltfLoader.loadAsync('../assets/animations/jump.glb'),
         gltfLoader.loadAsync('../assets/animations/fall.glb'),
-      ]).then(([world, character, idle, forward, backward, leftward, rightward, runForward, runBackward, runLeftward, runRightward, jump, fall]) => {
+        gltfLoader.loadAsync('../assets/animations/shoot.glb'),
+      ]).then(([world, character, idle, forward, backward, leftward, rightward, runForward, runBackward, runLeftward, runRightward, jump, fall, shoot]) => {
         scene.add(world.scene);
         world.scene.traverse(child => {
           if (child.isMesh) {
@@ -119,6 +120,11 @@
         helpers = new PhysicsControlsHelper(controls, 0xffffff);
         helpers.visible = false;
         scene.add(helpers);
+
+        controls.setAnimationClip('shoot', shoot.animations[0], 1);
+        const shootAction = controls.getAnimationAction('shoot')
+        shootAction.loop = THREE.LoopOnce;
+        shootAction.clampWhenFinished = true;
 
         // GUI - Debug
         const folder1 = gui.addFolder('Debug');
@@ -202,6 +208,16 @@
       stats.domElement.style.position = 'absolute';
       stats.domElement.style.top = '0px';
       container.appendChild(stats.domElement);
+
+      function onKeyDown(event) {
+        switch (event.code) {
+          case 'KeyZ': // space
+            controls.fadeToAction('shoot', 0.1)
+            break; 
+        }
+      }
+
+      window.addEventListener('keydown', onKeyDown);
 
       function animate() {
         const delta = Math.min(0.05, clock.getDelta());

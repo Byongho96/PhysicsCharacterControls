@@ -3,6 +3,7 @@ import {
   AnimationClip,
   AnimationMixer,
   AnimationObjectGroup,
+  LoopOnce,
   Object3D,
   Quaternion,
   Vector3,
@@ -31,7 +32,6 @@ type Animations =
 export type AnimationOptions = {
   animationClips?: Partial<Record<Animations, AnimationClip>>;
   transitionTime?: number;
-  transitionDelay?: number;
   fallSpeedThreshold?: number;
   moveSpeedThreshold?: number;
   runSpeedThreshold?: number;
@@ -40,12 +40,15 @@ export type AnimationOptions = {
 class PhysicsCharacterControls extends PhysicsControls {
   private _mixer: AnimationMixer;
   private _objectGroup: AnimationObjectGroup;
+
   private _animationClips: Record<string, AnimationClip> = {};
+  private _animationPriority: Record<string, number> = {};
   private _animationActions: Record<string, AnimationAction> = {};
+
+  private _currentAnimationKey: string = '';
 
   // Animation options
   transitionTime: number;
-  transitionDelay: number;
   fallSpeedThreshold: number;
   moveSpeedThreshold: number;
   runSpeedThreshold: number;
@@ -71,8 +74,13 @@ class PhysicsCharacterControls extends PhysicsControls {
       });
     }
 
+    const jumpAction = this.getAnimationAction('jump');
+    if (jumpAction) {
+      jumpAction.clampWhenFinished = true;
+      jumpAction.loop = LoopOnce;
+    }
+
     this.transitionTime = animationOptions.transitionTime ?? 0.4;
-    this.transitionDelay = animationOptions.transitionDelay ?? 0.3;
     this.fallSpeedThreshold = animationOptions.fallSpeedThreshold ?? 15;
     this.moveSpeedThreshold = animationOptions.moveSpeedThreshold ?? 1;
     this.runSpeedThreshold = animationOptions.runSpeedThreshold ?? 5;
@@ -106,10 +114,11 @@ class PhysicsCharacterControls extends PhysicsControls {
    * @param key - The identifier for the animation clip.
    * @param clip - The AnimationClip to add.
    */
-  setAnimationClip(key: string, clip: AnimationClip) {
+  setAnimationClip(key: string, clip: AnimationClip, priority?: number) {
     const action = this._mixer.clipAction(clip);
 
     this._animationClips[key] = clip;
+    this._animationPriority[key] = priority ?? 0;
     this._animationActions[key] = action;
   }
 
@@ -130,7 +139,12 @@ class PhysicsCharacterControls extends PhysicsControls {
     this._mixer.uncacheClip(clip);
 
     delete this._animationClips[key];
+    delete this._animationPriority[key];
     delete this._animationActions[key];
+  }
+
+  getAnimationAction(key: string) {
+    return this._animationActions[key];
   }
 
   /**
@@ -138,18 +152,25 @@ class PhysicsCharacterControls extends PhysicsControls {
    * @param key - The identifier for the animation action to transition to.
    * @param duration - The duration of the transition in seconds.
    */
-  private _fadeToAction(key: string, duration: number) {
-    const action = this._animationActions[key];
-    if (!action || action.isRunning()) return;
+  fadeToAction(key: string, duration: number, force: boolean = false) {
+    if (key === this._currentAnimationKey) return;
 
-    // Fade out all current actions
+    const action = this._animationActions[key];
+    if (!this._animationActions[key]) return;
+
+    const currentAction = this._animationActions[this._currentAnimationKey];
+    const currentActionPriority = this._animationPriority[this._currentAnimationKey];
+    if (!force && this._animationPriority[key] < currentActionPriority && currentAction.isRunning()) return;
+
     Object.values(this._animationActions).forEach(currentAction => {
       currentAction.fadeOut(duration);
     });
 
-    action.reset(); // Reset the action to start from the beginning
+    action.reset();
+    action.play();
     action.fadeIn(duration);
-    action.play(); // Play the action
+
+    this._currentAnimationKey = key;
   }
 
   /**
@@ -160,47 +181,47 @@ class PhysicsCharacterControls extends PhysicsControls {
     this._localVelocity.copy(this.velocity).applyQuaternion(worldQuaternion.invert());
 
     if (this.isGrounded && this._localVelocity.z > this.runSpeedThreshold && this._animationActions.runForward) {
-      return this._fadeToAction('runForward', this.transitionTime);
+      return this.fadeToAction('runForward', this.transitionTime);
     }
 
     if (this.isGrounded && this._localVelocity.z > this.moveSpeedThreshold) {
-      return this._fadeToAction('forward', this.transitionTime);
+      return this.fadeToAction('forward', this.transitionTime, true);
     }
 
     if (this.isGrounded && this._localVelocity.z < -this.runSpeedThreshold && this._animationActions.runBackward) {
-      return this._fadeToAction('runBackward', this.transitionTime);
+      return this.fadeToAction('runBackward', this.transitionTime, true);
     }
 
     if (this.isGrounded && this._localVelocity.z < -this.moveSpeedThreshold) {
-      return this._fadeToAction('backward', this.transitionTime);
+      return this.fadeToAction('backward', this.transitionTime, true);
     }
 
     if (this.isGrounded && this._localVelocity.x > this.runSpeedThreshold && this._animationActions.runLeftward) {
-      return this._fadeToAction('runLeftward', this.transitionTime);
+      return this.fadeToAction('runLeftward', this.transitionTime, true);
     }
 
     if (this.isGrounded && this._localVelocity.x > this.moveSpeedThreshold) {
-      return this._fadeToAction('leftward', this.transitionTime);
+      return this.fadeToAction('leftward', this.transitionTime, true);
     }
 
     if (this.isGrounded && this._localVelocity.x < -this.runSpeedThreshold && this._animationActions.runRightward) {
-      return this._fadeToAction('runRightward', this.transitionTime);
+      return this.fadeToAction('runRightward', this.transitionTime, true);
     }
 
     if (this.isGrounded && this._localVelocity.x < -this.moveSpeedThreshold) {
-      return this._fadeToAction('rightward', this.transitionTime);
+      return this.fadeToAction('rightward', this.transitionTime, true);
     }
 
     if (this.velocity.y > 0) {
-      return this._fadeToAction('jump', this.transitionTime);
+      return this.fadeToAction('jump', this.transitionTime, true);
     }
 
     if (this.velocity.y < -this.fallSpeedThreshold) {
-      return this._fadeToAction('fall', this.transitionTime);
+      return this.fadeToAction('fall', this.transitionTime);
     }
 
     if (this.isGrounded) {
-      return this._fadeToAction('idle', this.transitionTime);
+      return this.fadeToAction('idle', this.transitionTime);
     }
   }
 
