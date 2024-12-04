@@ -1,3 +1,5 @@
+export * from './controls/base/PhysicsControls';
+
 export * from './controls/FirstPersonKeyboardControls';
 export * from './controls/FirstPersonMouseDragControls';
 export * from './controls/FirstPersonPointerLockControls';
