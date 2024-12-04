@@ -2236,4 +2236,4 @@ class PhysicsControlsHelper extends Group {
     }
 }
 
-export { FirstPersonKeyboardControls, FirstPersonMouseDragControls, FirstPersonPointerLockControls, PhysicsControlsHelper, ThirdPersonKeyboardControls, ThirdPersonMouseDragControls, ThirdPersonPointerLockControls };
+export { FirstPersonKeyboardControls, FirstPersonMouseDragControls, FirstPersonPointerLockControls, PhysicsControls, PhysicsControlsHelper, ThirdPersonKeyboardControls, ThirdPersonMouseDragControls, ThirdPersonPointerLockControls };

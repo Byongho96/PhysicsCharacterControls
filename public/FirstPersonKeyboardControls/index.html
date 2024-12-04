@@ -44,9 +44,7 @@
       let controls;
       let helpers;
 
-      Promise.all([
-        gltfLoader.loadAsync('../assets/models/collision-world.glb'),
-      ]).then(([world]) => {
+      Promise.all([gltfLoader.loadAsync('../assets/models/collision-world.glb')]).then(([world]) => {
         scene.add(world.scene);
         world.scene.traverse(child => {
           if (child.isMesh) {
@@ -54,7 +52,7 @@
             child.receiveShadow = true;
           }
         });
-        
+
         controls = new FirstPersonKeyboardControls({
           object: camera,
           domElement: renderer.domElement,

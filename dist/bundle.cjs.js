@@ -2243,6 +2243,7 @@ class PhysicsControlsHelper extends three.Group {
 exports.FirstPersonKeyboardControls = FirstPersonKeyboardControls;
 exports.FirstPersonMouseDragControls = FirstPersonMouseDragControls;
 exports.FirstPersonPointerLockControls = FirstPersonPointerLockControls;
+exports.PhysicsControls = PhysicsControls;
 exports.PhysicsControlsHelper = PhysicsControlsHelper;
 exports.ThirdPersonKeyboardControls = ThirdPersonKeyboardControls;
 exports.ThirdPersonMouseDragControls = ThirdPersonMouseDragControls;
