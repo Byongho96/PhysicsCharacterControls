@@ -27,9 +27,12 @@
 
       import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-      import { FirstPersonPointerLockControls } from 'physics-character-controls';
+      import { FirstPersonKeyboardControls } from 'physics-character-controls';
 
       import { Monster, MonsterFactory } from './monster.js';
+
+      import { XRButton } from 'three/addons/webxr/XRButton.js';
+      import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
       const container = document.getElementById('container');
 
@@ -71,26 +74,14 @@
         world.receiveShadow = true;
         scene.add(world);
 
-        controls = new FirstPersonPointerLockControls({
+        controls = new FirstPersonKeyboardControls({
           object: camera,
           domElement: renderer.domElement,
           worldObject: world,
           physicsOptions: {
-            boundary: {
-              resetPoint: new THREE.Vector3(0, 0, 0),
-              x: {
-                min: -20,
-                max: 30,
-              },
-              y: {
-                min: -10,
-                max: 20,
-              },
-              z: {
-                min: -20,
-                max: 30,
-              },
-            },
+            jumpForce: 0,
+            groundMoveSpeed: 0,
+            floatMoveSpeed: 0,
           },
         });
       });
@@ -169,14 +160,29 @@
         }, 5000);
       });
 
-      const raycaster = new THREE.Raycaster();
-      const pointer = new THREE.Vector2();
+      // XR
+      document.body.appendChild(
+        XRButton.createButton(renderer, {
+          optionalFeatures: ['depth-sensing'],
+          depthSensing: { usagePreference: ['gpu-optimized'], dataFormatPreference: [] },
+        }),
+      );
 
-      function handleClick(event) {
+      // XR controllers
+      const raycaster = new THREE.Raycaster();
+
+      function onSelectStart() {
         shootAudio.stop();
         shootAudio.play();
 
-        raycaster.setFromCamera(pointer, camera);
+        const position = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+
+        this.matrixWorld.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
+        direction.set(0, 0, -1).applyQuaternion(this.quaternion).normalize();
+
+        raycaster.set(position, direction);
+
         const intersects = raycaster.intersectObjects(monsterObjects, true);
 
         if (intersects.length === 0) return;
@@ -193,7 +199,60 @@
         }, 1000);
       }
 
-      window.addEventListener('click', handleClick);
+      const controller1 = renderer.xr.getController(0);
+      controller1.addEventListener('selectstart', onSelectStart);
+      controller1.addEventListener('connected', function (event) {
+        this.add(buildController(event.data));
+      });
+      controller1.addEventListener('disconnected', function () {
+        this.remove(this.children[0]);
+      });
+      scene.add(controller1);
+
+      const controller2 = renderer.xr.getController(1);
+      controller2.addEventListener('selectstart', onSelectStart);
+      controller2.addEventListener('connected', function (event) {
+        this.add(buildController(event.data));
+      });
+      controller2.addEventListener('disconnected', function () {
+        this.remove(this.children[0]);
+      });
+      scene.add(controller2);
+
+      // The XRControllerModelFactory will automatically fetch controller models
+      // that match what the user is holding as closely as possible. The models
+      // should be attached to the object returned from getControllerGrip in
+      // order to match the orientation of the held device.
+
+      const controllerModelFactory = new XRControllerModelFactory();
+
+      const controllerGrip1 = renderer.xr.getControllerGrip(0);
+      controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
+      scene.add(controllerGrip1);
+
+      const controllerGrip2 = renderer.xr.getControllerGrip(1);
+      controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
+      scene.add(controllerGrip2);
+
+      function buildController(data) {
+        let geometry, material;
+
+        switch (data.targetRayMode) {
+          case 'tracked-pointer':
+            geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, -1], 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute([0.5, 0.5, 0.5, 0, 0, 0], 3));
+
+            material = new THREE.LineBasicMaterial({ vertexColors: true, blending: THREE.AdditiveBlending });
+
+            return new THREE.Line(geometry, material);
+
+          case 'gaze':
+            geometry = new THREE.RingGeometry(0.02, 0.04, 32).translate(0, 0, -1);
+            material = new THREE.MeshBasicMaterial({ opacity: 0.5, transparent: true });
+            return new THREE.Mesh(geometry, material);
+        }
+      }
 
       function animate() {
         const delta = Math.min(0.05, clock.getDelta());
@@ -241,8 +300,6 @@
         if (renderer.domElement && renderer.domElement.parentNode) {
           renderer.domElement.parentNode.removeChild(renderer.domElement);
         }
-
-        renderer.domElement.removeEventListener('click', handleClick);
 
         window.removeEventListener('resize', onWindowResize);
       }
