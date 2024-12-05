@@ -1,4 +1,4 @@
-import { Box3, Object3D, Vector3 } from 'three';
+import { Box3, Object3D, Ray, Vector3 } from 'three';
 import { Controls } from 'three'; // Assuming Controls is imported from 'three'
 import { Octree } from 'three/examples/jsm/math/Octree.js';
 import { ColliderCapsule } from '../../math/Capsule';
@@ -47,6 +47,7 @@ export type PhysicsOptions = {
   colliderHeight?: number; // Custom height of the capsule collider of the player (default: object's height)
   colliderRadius?: number; // Custom radius of the capsule collider of the player (default: height / 4)
   boundary?: Boundary; // Boundary of the world
+  landThreshold?: number; // Threshold for determining the landing point. (default: 2.5)
 };
 
 /**
@@ -62,10 +63,13 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
   maxFallSpeed: number;
   movementResistance: number;
   velocity: Vector3 = new Vector3();
+  landThreshold: number;
+  ray: Ray = new Ray();
 
   boundary?: Boundary;
 
   private _isGrounded: boolean = false;
+  private _isLanding: boolean = false;
 
   // Temporary vectors for calculations
   private _deltaVelocity: Vector3 = new Vector3();
@@ -99,6 +103,7 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
     this.gravity = physicsOptions?.gravity ?? 30;
     this.maxFallSpeed = physicsOptions?.maxFallSpeed ?? 20;
     this.movementResistance = physicsOptions?.movementResistance ?? 6;
+    this.landThreshold = physicsOptions?.landThreshold ?? 2.5;
 
     // Set boundary properties if provided.
     this.boundary = physicsOptions?.boundary;
@@ -106,6 +111,10 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
 
   get isGrounded() {
     return this._isGrounded;
+  }
+
+  get isLanding() {
+    return this._isLanding;
   }
 
   get collider() {
@@ -132,6 +141,21 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
     if (collisionResult.depth >= 1e-10) {
       this.collider.translate(collisionResult.normal.multiplyScalar(collisionResult.depth));
       this.dispatchEvent({ ..._collideEvent, normal: collisionResult.normal.normalize() });
+    }
+  }
+
+  private _checkLanding() {
+    this._isLanding = false;
+
+    if (this._isGrounded || this.velocity.y >= 0) return;
+
+    const bottomPosition = this._capsuleCollider.start
+      .clone()
+      .setY(this._capsuleCollider.start.y - this._capsuleCollider.radius);
+    const collisionResult = this._worldOctree.rayIntersect(new Ray(bottomPosition, new Vector3(0, -1, 0)));
+
+    if (-collisionResult.distance / this.velocity.y <= this.landThreshold) {
+      this._isLanding = true;
     }
   }
 
@@ -179,6 +203,7 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
       this.collider.translate(this._deltaVelocity);
 
       this._checkCollisions();
+      this._checkLanding();
 
       this._teleportPlayerIfOutOfBounds();
     }
