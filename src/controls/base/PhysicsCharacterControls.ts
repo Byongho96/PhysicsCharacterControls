@@ -37,7 +37,6 @@ export type AnimationOptions = {
   fallSpeedThreshold?: number;
   moveSpeedThreshold?: number;
   runSpeedThreshold?: number;
-  jumpThreshold?: number;
 };
 
 class PhysicsCharacterControls extends PhysicsControls {
@@ -52,7 +51,6 @@ class PhysicsCharacterControls extends PhysicsControls {
   fallSpeedThreshold: number;
   moveSpeedThreshold: number;
   runSpeedThreshold: number;
-  jumpThreshold: number;
 
   private _localVelocity: Vector3 = new Vector3();
   private _worldQuaternion: Quaternion = new Quaternion();
@@ -81,7 +79,6 @@ class PhysicsCharacterControls extends PhysicsControls {
     this.fallSpeedThreshold = animationOptions.fallSpeedThreshold ?? 15;
     this.moveSpeedThreshold = animationOptions.moveSpeedThreshold ?? 1;
     this.runSpeedThreshold = animationOptions.runSpeedThreshold ?? 5;
-    this.jumpThreshold = animationOptions.jumpThreshold ?? 0.6;
   }
 
   /**
@@ -143,8 +140,9 @@ class PhysicsCharacterControls extends PhysicsControls {
    * Smoothly transitions to the specified animation action over a given duration.
    * @param key - The identifier for the animation action to transition to.
    * @param duration - The duration of the transition in seconds.
+   * @param isOnce - (Optional) If true, the animation will play only once and stop at the last frame.
    */
-  private _fadeToAction(key: string, duration: number) {
+  private _fadeToAction(key: string, duration: number, isOnce?: boolean) {
     const action = this._animationActions[key];
     if (!action || action.isRunning()) return;
 
@@ -154,30 +152,10 @@ class PhysicsCharacterControls extends PhysicsControls {
     });
 
     action.reset(); // Reset the action to start from the beginning
-    action.fadeIn(duration);
-    action.play(); // Play the action
-  }
-
-  /**
-   * Transitions to a specific animation action, ensuring it plays once and fades smoothly.
-   *
-   * @param key - The identifier for the animation action to transition to.
-   * @param duration - The duration of the transition in seconds.
-   * @param timeScale - The playback speed for the animation action.
-   */
-  private _fadeToActionOnce(key: string, duration: number, timeScale: number) {
-    const action = this._animationActions[key];
-    if (!action || action.isRunning()) return;
-
-    // Fade out all current actions
-    Object.values(this._animationActions).forEach(currentAction => {
-      currentAction.fadeOut(duration);
-    });
-
-    action.reset(); // Reset the action to start from the beginning
-    action.setLoop(LoopOnce, 1);
-    action.clampWhenFinished = true;
-    action.setEffectiveTimeScale(timeScale);
+    if (isOnce) {
+      action.setLoop(LoopOnce, 1);
+      action.clampWhenFinished = true;
+    }
     action.fadeIn(duration);
     action.play(); // Play the action
   }
@@ -191,12 +169,12 @@ class PhysicsCharacterControls extends PhysicsControls {
 
     if (this.velocity.y > 0 && !this._isJumping) {
       this._isJumping = true;
-      return this._fadeToActionOnce('jumpUp', this.transitionTime, this.jumpThreshold);
+      return this._fadeToAction('jumpUp', this.transitionTime, true);
     }
 
     if (this.isLanding && this._isJumping) {
       this._isJumping = false;
-      return this._fadeToActionOnce('jumpDown', this.transitionTime, this.jumpThreshold);
+      return this._fadeToAction('jumpDown', this.transitionTime, true);
     }
 
     if (this.isGrounded && this._localVelocity.z > this.runSpeedThreshold && this._animationActions.runForward) {

@@ -56,6 +56,7 @@ export type PhysicsOptions = {
 class PhysicsControls extends Controls<PhysicsControlsEventMap> {
   private _worldOctree: Octree;
   private _capsuleCollider: ColliderCapsule;
+  private _ray: Ray = new Ray(new Vector3(), new Vector3(0, -1, 0));
 
   // Physics properties
   step: number;
@@ -64,7 +65,6 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
   movementResistance: number;
   velocity: Vector3 = new Vector3();
   landThreshold: number;
-  ray: Ray = new Ray();
 
   boundary?: Boundary;
 
@@ -149,12 +149,10 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
 
     if (this._isGrounded || this.velocity.y >= 0) return;
 
-    const bottomPosition = this._capsuleCollider.start
-      .clone()
-      .setY(this._capsuleCollider.start.y - this._capsuleCollider.radius);
-    const collisionResult = this._worldOctree.rayIntersect(new Ray(bottomPosition, new Vector3(0, -1, 0)));
+    this._ray.origin.copy(this._capsuleCollider.start).y -= this._capsuleCollider.radius;
+    const rayResult = this._worldOctree.rayIntersect(this._ray);
 
-    if (-collisionResult.distance / this.velocity.y <= this.landThreshold) {
+    if (rayResult.distance / Math.abs(this.velocity.y) <= this.landThreshold) {
       this._isLanding = true;
     }
   }
