@@ -47,7 +47,7 @@ export type PhysicsOptions = {
   colliderHeight?: number; // Custom height of the capsule collider of the player (default: object's height)
   colliderRadius?: number; // Custom radius of the capsule collider of the player (default: height / 4)
   boundary?: Boundary; // Boundary of the world
-  landThreshold?: number; // Threshold for determining the landing point. (default: 2.5)
+  landTimeThreshold?: number; // Threshold for determining the landing time. (default: 250)
 };
 
 /**
@@ -64,7 +64,7 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
   maxFallSpeed: number;
   movementResistance: number;
   velocity: Vector3 = new Vector3();
-  landThreshold: number;
+  landTimeThreshold: number;
 
   boundary?: Boundary;
 
@@ -103,7 +103,7 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
     this.gravity = physicsOptions?.gravity ?? 30;
     this.maxFallSpeed = physicsOptions?.maxFallSpeed ?? 20;
     this.movementResistance = physicsOptions?.movementResistance ?? 6;
-    this.landThreshold = physicsOptions?.landThreshold ?? 2.5;
+    this.landTimeThreshold = physicsOptions?.landTimeThreshold ?? 250;
 
     // Set boundary properties if provided.
     this.boundary = physicsOptions?.boundary;
@@ -152,7 +152,7 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
     this._ray.origin.copy(this._capsuleCollider.start).y -= this._capsuleCollider.radius;
     const rayResult = this._worldOctree.rayIntersect(this._ray);
 
-    if (rayResult.distance / Math.abs(this.velocity.y) <= this.landThreshold) {
+    if (rayResult.distance / -this._deltaVelocity.y < this.landTimeThreshold) {
       this._isLanding = true;
     }
   }
