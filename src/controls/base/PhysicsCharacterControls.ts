@@ -54,7 +54,7 @@ class PhysicsCharacterControls extends PhysicsControls {
 
   private _localVelocity: Vector3 = new Vector3();
   private _worldQuaternion: Quaternion = new Quaternion();
-  private _isJumping: boolean = false;
+  private _currentAction: AnimationAction | null = null;
 
   constructor(
     object: Object3D,
@@ -144,12 +144,14 @@ class PhysicsCharacterControls extends PhysicsControls {
    */
   private _fadeToAction(key: string, duration: number, isOnce?: boolean) {
     const action = this._animationActions[key];
-    if (!action || action.isRunning()) return;
+    if (!action || action === this._currentAction) return;
 
     // Fade out all current actions
     Object.values(this._animationActions).forEach(currentAction => {
       currentAction.fadeOut(duration);
     });
+
+    this._currentAction = action;
 
     action.reset(); // Reset the action to start from the beginning
     if (isOnce) {
@@ -167,13 +169,11 @@ class PhysicsCharacterControls extends PhysicsControls {
     const worldQuaternion = this.object.getWorldQuaternion(this._worldQuaternion);
     this._localVelocity.copy(this.velocity).applyQuaternion(worldQuaternion.invert());
 
-    if (this.velocity.y > 0 && !this._isJumping) {
-      this._isJumping = true;
+    if (this.velocity.y > 0) {
       return this._fadeToAction('jumpUp', this.transitionTime, true);
     }
 
-    if (this.isLanding && this._isJumping) {
-      this._isJumping = false;
+    if (this.isLanding) {
       return this._fadeToAction('jumpDown', this.transitionTime, true);
     }
 
