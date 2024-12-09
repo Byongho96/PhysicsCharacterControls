@@ -27,7 +27,7 @@
 
       import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-      import { FirstPersonKeyboardControls } from 'physics-character-controls';
+      import { PhysicsControls } from 'physics-character-controls';
 
       import { Monster, MonsterFactory } from './monster.js';
 
@@ -74,34 +74,12 @@
         world.receiveShadow = true;
         scene.add(world);
 
-        controls = new FirstPersonKeyboardControls({
-          object: camera,
-          domElement: renderer.domElement,
-          worldObject: world,
-          physicsOptions: {
-            jumpForce: 0,
-            groundMoveSpeed: 0,
-            floatMoveSpeed: 0,
-          },
+        controls = new PhysicsControls(cameraGrandParent, renderer.domElement, world, {
+          colliderHeight: 1.6,
+          colliderRadius: 0.5,
         });
+        controls.enabled = false;
       });
-
-      // Scene
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x000000);
-
-      // Camera
-      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.rotation.order = 'YXZ';
-      camera.position.set(0, 2, 0);
-      scene.add(camera);
-
-      // Light
-      const spotLight = new THREE.SpotLight(0xffbb55, 50, 100, Math.PI / 5, 0.5);
-      spotLight.position.set(0, 0, 0.1);
-      spotLight.castShadow = true;
-      spotLight.target = camera;
-      camera.add(spotLight);
 
       // Renderer
       const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -113,6 +91,37 @@
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       container.appendChild(renderer.domElement);
+
+      // Scene
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
+
+      // Camera
+      const cameraGrandParent = new THREE.Object3D();
+      cameraGrandParent.position.set(0, 2, 0);
+      scene.add(cameraGrandParent);
+
+      const cameraParent = new THREE.Object3D();
+      cameraParent.lookAt(0, 0, 1);
+      cameraGrandParent.add(cameraParent);
+
+      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.rotation.order = 'YXZ';
+      cameraParent.add(camera);
+
+      renderer.xr.addEventListener('sessionstart', () => {
+        const xrCamera = renderer.xr.getCamera();
+        cameraParent.add(xrCamera);
+
+        controls.enabled = true;
+      });
+
+      // Light
+      const spotLight = new THREE.SpotLight(0xffbb55, 50, 100, Math.PI / 5, 0.5);
+      spotLight.position.set(0, 0, 0.1);
+      spotLight.castShadow = true;
+      spotLight.target = camera;
+      camera.add(spotLight);
 
       // Audio
       const listener = new THREE.AudioListener();
@@ -149,9 +158,11 @@
       const monsterFactory = new MonsterFactory(listener);
       monsterFactory.loadGLTF().then(() => {
         monsterInterval = setInterval(() => {
+          if (!renderer.xr.isPresenting) return;
+
           if (monsters.length > 20) return;
 
-          const monster = monsterFactory.createMonster(camera);
+          const monster = monsterFactory.createMonster(cameraGrandParent);
           if (!monster) return;
 
           monster.object.position.set(Math.random() * 20 - 10, 0, Math.random() * 20 - 10);
@@ -200,9 +211,12 @@
         }, 1000);
       }
 
+      let gamepad1, gamepad2;
+
       const controller1 = renderer.xr.getController(0);
       controller1.addEventListener('selectstart', onSelectStart);
       controller1.addEventListener('connected', function (event) {
+        gamepad1 = event.data.gamepad;
         this.add(buildController(event.data));
       });
       controller1.addEventListener('disconnected', function () {
@@ -213,6 +227,7 @@
       const controller2 = renderer.xr.getController(1);
       controller2.addEventListener('selectstart', onSelectStart);
       controller2.addEventListener('connected', function (event) {
+        gamepad2 = event.data.gamepad;
         this.add(buildController(event.data));
       });
       controller2.addEventListener('disconnected', function () {
@@ -263,6 +278,34 @@
         monsters.forEach(monster => {
           monster.update(delta);
         });
+
+        if (renderer.xr.isPresenting) {
+          // move by left joystick
+          const speed = 100;
+
+          const x = gamepad2.axes[2];
+          const y = gamepad2.axes[3];
+
+          const accumulatedDirection = new THREE.Vector3();
+
+          const forwardDirection = new THREE.Vector3();
+          renderer.xr.getCamera().getWorldDirection(forwardDirection);
+          forwardDirection.y = 0;
+          forwardDirection.normalize();
+          forwardDirection.multiplyScalar(-1 * y * speed * delta);
+
+          const sideDirection = new THREE.Vector3();
+          renderer.xr.getCamera().getWorldDirection(sideDirection);
+          sideDirection.y = 0;
+          sideDirection.cross(renderer.xr.getCamera().up);
+          sideDirection.normalize();
+          sideDirection.multiplyScalar(x * speed * delta);
+
+          accumulatedDirection.add(forwardDirection).add(sideDirection);
+
+          controls.velocity.x = accumulatedDirection.x;
+          controls.velocity.z = accumulatedDirection.z;
+        }
 
         renderer.render(scene, camera);
 
