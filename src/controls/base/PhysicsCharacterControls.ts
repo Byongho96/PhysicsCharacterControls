@@ -74,7 +74,7 @@ class PhysicsCharacterControls extends PhysicsControls {
       });
     }
 
-    this.transitionTime = animationOptions.transitionTime ?? 0.4;
+    this.transitionTime = animationOptions.transitionTime ?? 0.3;
     this.transitionDelay = animationOptions.transitionDelay ?? 0.3;
     this.fallSpeedThreshold = animationOptions.fallSpeedThreshold ?? 15;
     this.moveSpeedThreshold = animationOptions.moveSpeedThreshold ?? 1;
