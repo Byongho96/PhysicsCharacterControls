@@ -222,7 +222,7 @@
       controller1.addEventListener('disconnected', function () {
         this.remove(this.children[0]);
       });
-      scene.add(controller1);
+      cameraParent.add(controller1);
 
       const controller2 = renderer.xr.getController(1);
       controller2.addEventListener('selectstart', onSelectStart);
@@ -233,7 +233,7 @@
       controller2.addEventListener('disconnected', function () {
         this.remove(this.children[0]);
       });
-      scene.add(controller2);
+      cameraParent.add(controller2);
 
       // The XRControllerModelFactory will automatically fetch controller models
       // that match what the user is holding as closely as possible. The models
@@ -244,11 +244,11 @@
 
       const controllerGrip1 = renderer.xr.getControllerGrip(0);
       controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
-      scene.add(controllerGrip1);
+      cameraParent.add(controllerGrip1);
 
       const controllerGrip2 = renderer.xr.getControllerGrip(1);
       controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
-      scene.add(controllerGrip2);
+      cameraParent.add(controllerGrip2);
 
       function buildController(data) {
         let geometry, material;
@@ -279,7 +279,7 @@
           monster.update(delta);
         });
 
-        if (renderer.xr.isPresenting) {
+        if (gamepad2) {
           // move by left joystick
           const speed = 100;
 
