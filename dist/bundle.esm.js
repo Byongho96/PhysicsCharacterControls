@@ -1,4 +1,4 @@
-import { Vector3, Plane, Line3, Sphere, Box3, Triangle, Layers, Controls, PerspectiveCamera, OrthographicCamera, Quaternion, AnimationObjectGroup, AnimationMixer, Spherical, Group, CapsuleGeometry, LineSegments, LineBasicMaterial, BoxGeometry } from 'three';
+import { Vector3, Plane, Line3, Sphere, Box3, Triangle, Layers, Controls, Ray, PerspectiveCamera, OrthographicCamera, Quaternion, AnimationObjectGroup, AnimationMixer, LoopOnce, Spherical, Group, CapsuleGeometry, LineSegments, LineBasicMaterial, BoxGeometry } from 'three';
 
 function _classCallCheck(a, n) {
   if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function");
@@ -462,10 +462,12 @@ class PhysicsControls extends Controls {
      * @param physicsOptions - Optional physics configuration.
      */
     constructor(object, domElement, world, physicsOptions) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         super(object, domElement);
+        this._ray = new Ray(new Vector3(), new Vector3(0, -1, 0));
         this.velocity = new Vector3();
         this._isGrounded = false;
+        this._isLanding = false;
         // Temporary vectors for calculations
         this._deltaVelocity = new Vector3();
         // Create an octree from the world for collision detection.
@@ -483,11 +485,15 @@ class PhysicsControls extends Controls {
         this.gravity = (_b = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.gravity) !== null && _b !== void 0 ? _b : 30;
         this.maxFallSpeed = (_c = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.maxFallSpeed) !== null && _c !== void 0 ? _c : 20;
         this.movementResistance = (_d = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.movementResistance) !== null && _d !== void 0 ? _d : 6;
+        this.landTimeThreshold = (_e = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.landTimeThreshold) !== null && _e !== void 0 ? _e : 250;
         // Set boundary properties if provided.
         this.boundary = physicsOptions === null || physicsOptions === void 0 ? void 0 : physicsOptions.boundary;
     }
     get isGrounded() {
         return this._isGrounded;
+    }
+    get isLanding() {
+        return this._isLanding;
     }
     get collider() {
         return this._capsuleCollider;
@@ -509,6 +515,16 @@ class PhysicsControls extends Controls {
         if (collisionResult.depth >= 1e-10) {
             this.collider.translate(collisionResult.normal.multiplyScalar(collisionResult.depth));
             this.dispatchEvent(Object.assign(Object.assign({}, _collideEvent), { normal: collisionResult.normal.normalize() }));
+        }
+    }
+    _checkLanding() {
+        this._isLanding = false;
+        if (this._isGrounded || this.velocity.y >= 0)
+            return;
+        this._ray.origin.copy(this._capsuleCollider.start).y -= this._capsuleCollider.radius;
+        const rayResult = this._worldOctree.rayIntersect(this._ray);
+        if (rayResult.distance / -this._deltaVelocity.y < this.landTimeThreshold) {
+            this._isLanding = true;
         }
     }
     /**
@@ -547,6 +563,7 @@ class PhysicsControls extends Controls {
             this._deltaVelocity.copy(this.velocity).multiplyScalar(stepDelta);
             this.collider.translate(this._deltaVelocity);
             this._checkCollisions();
+            this._checkLanding();
             this._teleportPlayerIfOutOfBounds();
         }
         // Update the object's position to match the collider.
@@ -1260,6 +1277,7 @@ class PhysicsCharacterControls extends PhysicsControls {
         this._animationActions = {};
         this._localVelocity = new Vector3();
         this._worldQuaternion = new Quaternion();
+        this._currentAction = null;
         this._objectGroup = new AnimationObjectGroup(object);
         this._mixer = new AnimationMixer(this._objectGroup);
         if (animationOptions.animationClips) {
@@ -1267,7 +1285,7 @@ class PhysicsCharacterControls extends PhysicsControls {
                 this.setAnimationClip(key, clip);
             });
         }
-        this.transitionTime = (_a = animationOptions.transitionTime) !== null && _a !== void 0 ? _a : 0.4;
+        this.transitionTime = (_a = animationOptions.transitionTime) !== null && _a !== void 0 ? _a : 0.3;
         this.transitionDelay = (_b = animationOptions.transitionDelay) !== null && _b !== void 0 ? _b : 0.3;
         this.fallSpeedThreshold = (_c = animationOptions.fallSpeedThreshold) !== null && _c !== void 0 ? _c : 15;
         this.moveSpeedThreshold = (_d = animationOptions.moveSpeedThreshold) !== null && _d !== void 0 ? _d : 1;
@@ -1324,16 +1342,22 @@ class PhysicsCharacterControls extends PhysicsControls {
      * Smoothly transitions to the specified animation action over a given duration.
      * @param key - The identifier for the animation action to transition to.
      * @param duration - The duration of the transition in seconds.
+     * @param isOnce - (Optional) If true, the animation will play only once and stop at the last frame.
      */
-    _fadeToAction(key, duration) {
+    _fadeToAction(key, duration, isOnce) {
         const action = this._animationActions[key];
-        if (!action || action.isRunning())
+        if (!action || action === this._currentAction)
             return;
         // Fade out all current actions
         Object.values(this._animationActions).forEach(currentAction => {
             currentAction.fadeOut(duration);
         });
+        this._currentAction = action;
         action.reset(); // Reset the action to start from the beginning
+        if (isOnce) {
+            action.setLoop(LoopOnce, 1);
+            action.clampWhenFinished = true;
+        }
         action.fadeIn(duration);
         action.play(); // Play the action
     }
@@ -1343,6 +1367,12 @@ class PhysicsCharacterControls extends PhysicsControls {
     _updateAnimation() {
         const worldQuaternion = this.object.getWorldQuaternion(this._worldQuaternion);
         this._localVelocity.copy(this.velocity).applyQuaternion(worldQuaternion.invert());
+        if (this.velocity.y > 0) {
+            return this._fadeToAction('jumpUp', this.transitionTime, true);
+        }
+        if (this.isLanding) {
+            return this._fadeToAction('jumpDown', this.transitionTime, true);
+        }
         if (this.isGrounded && this._localVelocity.z > this.runSpeedThreshold && this._animationActions.runForward) {
             return this._fadeToAction('runForward', this.transitionTime);
         }
@@ -1367,10 +1397,7 @@ class PhysicsCharacterControls extends PhysicsControls {
         if (this.isGrounded && this._localVelocity.x < -this.moveSpeedThreshold) {
             return this._fadeToAction('rightward', this.transitionTime);
         }
-        if (this.velocity.y > 0) {
-            return this._fadeToAction('jump', this.transitionTime);
-        }
-        if (this.velocity.y < -this.fallSpeedThreshold) {
+        if (!this.isLanding && this.velocity.y < -this.fallSpeedThreshold) {
             return this._fadeToAction('fall', this.transitionTime);
         }
         if (this.isGrounded) {

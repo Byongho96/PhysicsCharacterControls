@@ -3,7 +3,7 @@ import { PhysicsControls, PhysicsOptions } from './PhysicsControls';
 /**
  * Animation states that can be used.
  */
-type Animations = 'idle' | 'forward' | 'backward' | 'rightward' | 'leftward' | 'runForward' | 'runBackward' | 'runRightward' | 'runLeftward' | 'jump' | 'fall';
+type Animations = 'idle' | 'forward' | 'backward' | 'rightward' | 'leftward' | 'runForward' | 'runBackward' | 'runRightward' | 'runLeftward' | 'jumpUp' | 'jumpDown' | 'fall';
 /**
  * Configuration for animations and their options.
  */
@@ -27,6 +27,7 @@ declare class PhysicsCharacterControls extends PhysicsControls {
     runSpeedThreshold: number;
     private _localVelocity;
     private _worldQuaternion;
+    private _currentAction;
     constructor(object: Object3D, domElement: HTMLElement | null, world: Object3D, animationOptions?: AnimationOptions, physicsOptions?: PhysicsOptions);
     /**
      * Returns a read-only copy of the animation clips.
@@ -59,6 +60,7 @@ declare class PhysicsCharacterControls extends PhysicsControls {
      * Smoothly transitions to the specified animation action over a given duration.
      * @param key - The identifier for the animation action to transition to.
      * @param duration - The duration of the transition in seconds.
+     * @param isOnce - (Optional) If true, the animation will play only once and stop at the last frame.
      */
     private _fadeToAction;
     /**

@@ -3,6 +3,7 @@ import {
   AnimationClip,
   AnimationMixer,
   AnimationObjectGroup,
+  LoopOnce,
   Object3D,
   Quaternion,
   Vector3,
@@ -22,7 +23,8 @@ type Animations =
   | 'runBackward'
   | 'runRightward'
   | 'runLeftward'
-  | 'jump'
+  | 'jumpUp'
+  | 'jumpDown'
   | 'fall';
 
 /**
@@ -52,6 +54,7 @@ class PhysicsCharacterControls extends PhysicsControls {
 
   private _localVelocity: Vector3 = new Vector3();
   private _worldQuaternion: Quaternion = new Quaternion();
+  private _currentAction: AnimationAction | null = null;
 
   constructor(
     object: Object3D,
@@ -71,7 +74,7 @@ class PhysicsCharacterControls extends PhysicsControls {
       });
     }
 
-    this.transitionTime = animationOptions.transitionTime ?? 0.4;
+    this.transitionTime = animationOptions.transitionTime ?? 0.3;
     this.transitionDelay = animationOptions.transitionDelay ?? 0.3;
     this.fallSpeedThreshold = animationOptions.fallSpeedThreshold ?? 15;
     this.moveSpeedThreshold = animationOptions.moveSpeedThreshold ?? 1;
@@ -137,17 +140,24 @@ class PhysicsCharacterControls extends PhysicsControls {
    * Smoothly transitions to the specified animation action over a given duration.
    * @param key - The identifier for the animation action to transition to.
    * @param duration - The duration of the transition in seconds.
+   * @param isOnce - (Optional) If true, the animation will play only once and stop at the last frame.
    */
-  private _fadeToAction(key: string, duration: number) {
+  private _fadeToAction(key: string, duration: number, isOnce?: boolean) {
     const action = this._animationActions[key];
-    if (!action || action.isRunning()) return;
+    if (!action || action === this._currentAction) return;
 
     // Fade out all current actions
     Object.values(this._animationActions).forEach(currentAction => {
       currentAction.fadeOut(duration);
     });
 
+    this._currentAction = action;
+
     action.reset(); // Reset the action to start from the beginning
+    if (isOnce) {
+      action.setLoop(LoopOnce, 1);
+      action.clampWhenFinished = true;
+    }
     action.fadeIn(duration);
     action.play(); // Play the action
   }
@@ -158,6 +168,14 @@ class PhysicsCharacterControls extends PhysicsControls {
   private _updateAnimation() {
     const worldQuaternion = this.object.getWorldQuaternion(this._worldQuaternion);
     this._localVelocity.copy(this.velocity).applyQuaternion(worldQuaternion.invert());
+
+    if (this.velocity.y > 0) {
+      return this._fadeToAction('jumpUp', this.transitionTime, true);
+    }
+
+    if (this.isLanding) {
+      return this._fadeToAction('jumpDown', this.transitionTime, true);
+    }
 
     if (this.isGrounded && this._localVelocity.z > this.runSpeedThreshold && this._animationActions.runForward) {
       return this._fadeToAction('runForward', this.transitionTime);
@@ -191,11 +209,7 @@ class PhysicsCharacterControls extends PhysicsControls {
       return this._fadeToAction('rightward', this.transitionTime);
     }
 
-    if (this.velocity.y > 0) {
-      return this._fadeToAction('jump', this.transitionTime);
-    }
-
-    if (this.velocity.y < -this.fallSpeedThreshold) {
+    if (!this.isLanding && this.velocity.y < -this.fallSpeedThreshold) {
       return this._fadeToAction('fall', this.transitionTime);
     }
 

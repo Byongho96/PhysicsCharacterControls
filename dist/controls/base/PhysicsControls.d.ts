@@ -39,6 +39,7 @@ export type PhysicsOptions = {
     colliderHeight?: number;
     colliderRadius?: number;
     boundary?: Boundary;
+    landTimeThreshold?: number;
 };
 /**
  * PhysicsControls class that adds physics-based controls to a 3D object.
@@ -46,13 +47,16 @@ export type PhysicsOptions = {
 declare class PhysicsControls extends Controls<PhysicsControlsEventMap> {
     private _worldOctree;
     private _capsuleCollider;
+    private _ray;
     step: number;
     gravity: number;
     maxFallSpeed: number;
     movementResistance: number;
     velocity: Vector3;
+    landTimeThreshold: number;
     boundary?: Boundary;
     private _isGrounded;
+    private _isLanding;
     private _deltaVelocity;
     /**
      * Constructs a new PhysicsControls instance.
@@ -63,12 +67,14 @@ declare class PhysicsControls extends Controls<PhysicsControlsEventMap> {
      */
     constructor(object: Object3D, domElement: HTMLElement | null, world: Object3D, physicsOptions?: PhysicsOptions);
     get isGrounded(): boolean;
+    get isLanding(): boolean;
     get collider(): ColliderCapsule;
     /**
      * Checks for collisions between the player's collider and the world octree.
      * Updates the player's grounded state and adjusts velocity and position accordingly.
      */
     private _checkCollisions;
+    private _checkLanding;
     /**
      * Resets the player's position if they are out of the defined world boundaries.
      */
