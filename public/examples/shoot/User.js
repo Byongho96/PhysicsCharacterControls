@@ -1,12 +1,12 @@
 class User {
-
   constructor(object, collider, hp = 100, gun) {
     this.object = object;
-    this.collider = collider; 
+    this.collider = collider;
     this.hp = hp;
-    this._gun : Gun | null = gun;
+    this._gun = gun;
+    // this._gun : Gun | null = gun;
 
-    this.replaceGun(this._gun);
+    this.equipGun(this._gun);
   }
 
   get gun() {
@@ -14,7 +14,7 @@ class User {
   }
 
   set gun(newGun) {
-    this.replaceGun(newGun);
+    this.equipGun(newGun);
   }
 
   hit(damage) {
@@ -35,13 +35,15 @@ class User {
     }
   }
 
-  replaceGun(newGun) {
-    this.object.remove(this._gun);
+  equipGun(newGun) {
+    if (this._gun.object) {
+      this.object.remove(this._gun.object);
+    }
 
     this._gun = newGun;
 
-    this._gun.position.set(0.7, -1, -2);
     this.object.add(this._gun.object);
+    console.log(`${newGun.name}을(를) 장착했습니다.`);
   }
 
   status() {
