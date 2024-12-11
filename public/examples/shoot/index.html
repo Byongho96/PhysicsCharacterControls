@@ -31,6 +31,10 @@
 
       import { Monster, MonsterFactory } from './monster.js';
 
+      import { User } from './user.js';
+
+      import { Gun } from './gun.js';
+
       const container = document.getElementById('container');
 
       const clock = new THREE.Clock();
@@ -93,11 +97,27 @@
             },
           },
         });
+
+        // User
+        gltfLoader.load('../../assets/models/gun_low_poly_2.glb', gltf => {
+          const gunObject = gltf.scene;
+          const defaultGun = new Gun('Default Gun', gunObject, 100);
+
+          gunObject.position.set(0, 0, -5);
+          gunObject.scale.set(10, 10, 10);
+
+          const user = new User(camera, controls.collider, 100, defaultGun);
+
+          console.log('User created', camera);
+        });
       });
 
       // Scene
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0x000000);
+
+      // const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      // scene.add(ambientLight);
 
       // Camera
       const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
