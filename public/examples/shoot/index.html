@@ -206,12 +206,16 @@
         if (intersects[0].distance > 10) return;
 
         const monster = monsters.find(monster => monster.object.getObjectById(intersects[0].object.id));
-        monster.hit(100);
+        monster.hit(user.gun.damage);
+        console.log('총 데미지!', user.gun.damage);
+        console.log('몬스터 체력!', monster.health);
 
         setTimeout(() => {
-          scene.remove(monster.object);
-          monsters.splice(monsters.indexOf(monster), 1);
-          monsterObjects.splice(monsterObjects.indexOf(monster.object), 1);
+          if (monster.health <= 0) {
+            scene.remove(monster.object);
+            monsters.splice(monsters.indexOf(monster), 1);
+            monsterObjects.splice(monsterObjects.indexOf(monster.object), 1);
+          }
         }, 1000);
       }
 
