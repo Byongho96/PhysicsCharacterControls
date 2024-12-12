@@ -4,7 +4,6 @@ class User {
     this.collider = collider;
     this.hp = hp;
     this._gun = gun;
-    // this._gun : Gun | null = gun;
 
     this.equipGun(this._gun);
   }
@@ -44,10 +43,6 @@ class User {
 
     this.object.add(this._gun.object);
     console.log(`${newGun.name}을(를) 장착했습니다.`);
-  }
-
-  status() {
-    console.log(`HP: ${this.hp}, 무기: ${this.gun ? this.gun.name : '무기 없음'}`);
   }
 }
 

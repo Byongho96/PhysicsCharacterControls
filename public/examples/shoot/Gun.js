@@ -1,5 +1,5 @@
 class Gun {
-  constructor(name, object, damage = 10, fireRate = 1) {
+  constructor(name, object, damage = 10, fireRate = 10) {
     this.name = name;
     this.object = object;
     this.damage = damage;
@@ -31,12 +31,6 @@ class Gun {
     target.hit(this.damage);
 
     this.lastShotTime = currentTime;
-  }
-
-  status() {
-    console.log(
-      `총기 이름: ${this.name}, 공격력: ${this.damage}, 오디오 상태: ${this.audio ? '초기화됨' : '초기화되지 않음'}`,
-    );
   }
 }
 
