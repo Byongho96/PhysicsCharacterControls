@@ -1,11 +1,22 @@
 class User {
   constructor(object, collider, hp = 100, gun) {
-    this.object = object;
-    this.collider = collider;
-    this.hp = hp;
+    this._object = object;
+    this._collider = collider;
+    this._hp = hp;
     this._gun = gun;
 
     this.equipGun(this._gun);
+  }
+
+  get hp() {
+    return this._hp;
+  }
+
+  set hp(newHp) {
+    if (newHp < 0) {
+      newHp = 0;
+    }
+    this._hp = newHp;
   }
 
   get gun() {
@@ -17,18 +28,18 @@ class User {
   }
 
   hit(damage) {
-    this.hp -= damage;
-    console.log(`공격을 받았습니다. 남은 HP: ${this.hp}`);
-    if (this.hp <= 0) {
-      this.hp = 0;
+    this._hp -= damage;
+    console.log(`공격을 받았습니다. 남은 HP: ${this._hp}`);
+    if (this._hp <= 0) {
+      this._hp = 0;
       console.log(`쓰러졌습니다.`);
     }
   }
 
   attack(target) {
-    if (this.gun) {
-      console.log(`${this.gun.name}로 공격을 시작합니다.`);
-      this.gun.shoot(target);
+    if (this._gun) {
+      console.log(`${this._gun.name}로 공격을 시작합니다.`);
+      this._gun.shoot(target);
     } else {
       console.log(`무기가 없습니다.`);
     }
@@ -36,12 +47,12 @@ class User {
 
   equipGun(newGun) {
     if (this._gun.object) {
-      this.object.remove(this._gun.object);
+      this._object.remove(this._gun.object);
     }
 
     this._gun = newGun;
 
-    this.object.add(this._gun.object);
+    this._object.add(this._gun.object);
     console.log(`${newGun.name}을(를) 장착했습니다.`);
   }
 }
