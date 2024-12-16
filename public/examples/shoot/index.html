@@ -31,6 +31,12 @@
 
       import { Monster, MonsterFactory } from './monster.js';
 
+      import { User } from './User.js';
+
+      import { HandGun } from './HandGun.js';
+
+      import { Uzi } from './Uzi.js';
+
       const container = document.getElementById('container');
 
       const clock = new THREE.Clock();
@@ -39,6 +45,9 @@
       const textureLoader = new THREE.TextureLoader();
 
       let controls;
+      let user;
+      let loadedHandGun;
+      let loadedUzi;
 
       Promise.all([
         textureLoader.load('../../assets/textures/Sci_fi_Metal_Panel_007_basecolor.jpg'),
@@ -93,11 +102,24 @@
             },
           },
         });
+
+        // User
+        gltfLoader.load('../../assets/models/hand_gun.glb', gltf => {
+          const gunObject = gltf.scene;
+
+          const defaultGun = new HandGun(gunObject);
+
+          user = new User(camera, controls.collider, 100, defaultGun);
+          loadedHandGun = gunObject;
+        });
       });
 
       // Scene
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0x000000);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
 
       // Camera
       const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -184,16 +206,56 @@
         if (intersects[0].distance > 10) return;
 
         const monster = monsters.find(monster => monster.object.getObjectById(intersects[0].object.id));
-        monster.hit(100);
+
+        user.gun.shoot(monster);
+        console.log('몬스터 체력!', monster.health);
 
         setTimeout(() => {
-          scene.remove(monster.object);
-          monsters.splice(monsters.indexOf(monster), 1);
-          monsterObjects.splice(monsterObjects.indexOf(monster.object), 1);
+          if (monster.health <= 0) {
+            scene.remove(monster.object);
+            monsters.splice(monsters.indexOf(monster), 1);
+            monsterObjects.splice(monsterObjects.indexOf(monster.object), 1);
+          }
         }, 1000);
       }
 
       window.addEventListener('click', handleClick);
+
+      function handleKeyDown(event) {
+        if (event.key === 'q') {
+          console.log('새로운 총기 장착 중...');
+
+          if (user && user.gun) {
+            if (user.gun.name === 'hand_gun') {
+              if (loadedUzi) {
+                const newGun = new Uzi(loadedUzi.clone());
+                user.equipGun(newGun);
+              } else {
+                gltfLoader.load('../../assets/models/uzi.glb', gltf => {
+                  loadedUzi = gltf.scene;
+                  const newGun = new Uzi(loadedUzi.clone());
+                  user.equipGun(newGun);
+                });
+              }
+            } else if (user.gun.name === 'uzi') {
+              if (loadedHandGun) {
+                const newGun = new HandGun(loadedHandGun.clone());
+                user.equipGun(newGun);
+              } else {
+                gltfLoader.load('../../assets/models/hand_gun.glb', gltf => {
+                  loadedHandGun = gltf.scene;
+                  const newGun = new HandGun(loadedHandGun.clone());
+                  user.equipGun(newGun);
+                });
+              }
+            }
+          } else {
+            console.warn('User 또는 총기가 아직 초기화되지 않았습니다.');
+          }
+        }
+      }
+
+      window.addEventListener('keydown', handleKeyDown);
 
       function animate() {
         const delta = Math.min(0.05, clock.getDelta());
