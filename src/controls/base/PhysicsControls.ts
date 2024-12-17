@@ -1,7 +1,7 @@
 import { Box3, Object3D, Ray, Vector3 } from 'three';
 import { Controls } from 'three'; // Assuming Controls is imported from 'three'
 import { Octree } from 'three/examples/jsm/math/Octree.js';
-import { ColliderCapsule } from '../../math/Capsule';
+import { Capsule } from 'three/examples/jsm/math/Capsule.js';
 
 /**
  * Event map for PhysicsControls, defining the types of events that can be dispatched.
@@ -55,7 +55,7 @@ export type PhysicsOptions = {
  */
 class PhysicsControls extends Controls<PhysicsControlsEventMap> {
   private _worldOctree: Octree;
-  private _capsuleCollider: ColliderCapsule;
+  private _capsuleCollider: Capsule;
   private _ray: Ray = new Ray(new Vector3(), new Vector3(0, -1, 0));
 
   // Physics properties
@@ -95,7 +95,7 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
     const radius = physicsOptions?.colliderRadius || objectSize.y / 4;
     const height = physicsOptions?.colliderHeight || objectSize.y;
 
-    this._capsuleCollider = new ColliderCapsule(new Vector3(0, radius, 0), new Vector3(0, height - radius, 0), radius);
+    this._capsuleCollider = new Capsule(new Vector3(0, radius, 0), new Vector3(0, height - radius, 0), radius);
     this._capsuleCollider.translate(object.position);
 
     // Set physics properties
@@ -168,7 +168,11 @@ class PhysicsControls extends Controls<PhysicsControlsEventMap> {
 
     // Check if the player is out of bounds.
     if (px < x.min || px > x.max || py < y.min || py > y.max || pz < z.min || pz > z.max) {
-      this.collider.end.set(resetPoint.x, resetPoint.y + this.collider.height - this.collider.radius, resetPoint.z);
+      this.collider.end.set(
+        resetPoint.x,
+        resetPoint.y + this.collider.start.distanceTo(this.collider.end) + this.collider.radius,
+        resetPoint.z,
+      );
       this.collider.start.set(resetPoint.x, resetPoint.y + this.collider.radius, resetPoint.z);
       this.velocity.set(0, 0, 0);
     }

@@ -35,7 +35,7 @@ class PhysicsControlsHelper extends Group {
     // Create capsule geometry to visualize the collider.
     const capsuleGeometry = new CapsuleGeometry(
       controls.collider.radius,
-      controls.collider.height - 2 * controls.collider.radius,
+      controls.collider.start.distanceTo(controls.collider.end),
     );
     this.capsuleHelper = new LineSegments(capsuleGeometry, new LineBasicMaterial({ color: color, toneMapped: false }));
     this.add(this.capsuleHelper);
@@ -70,7 +70,8 @@ class PhysicsControlsHelper extends Group {
     this.controls.object.updateMatrixWorld(true);
 
     this.controls.object.getWorldPosition(this._capsulePosition);
-    this._capsulePosition.y += this.controls.collider.height / 2;
+    this._capsulePosition.y +=
+      this.controls.collider.start.distanceTo(this.controls.collider.end) / 2 + this.controls.collider.radius;
 
     this.capsuleHelper.position.copy(this._capsulePosition);
 
