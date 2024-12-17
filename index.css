@@ -39,7 +39,7 @@
   src:
     local('Roboto Mono'),
     local('RobotoMono-Regular'),
-    url('../assets/RobotoMono-Regular.woff2') format('woff2');
+    url('./assets/RobotoMono-Regular.woff2') format('woff2');
   font-style: normal;
   font-weight: 400;
 }
@@ -49,7 +49,7 @@
   src:
     local('Roboto Mono Medium'),
     local('RobotoMono-Medium'),
-    url('../assets/RobotoMono-Medium.woff2') format('woff2');
+    url('./assets/RobotoMono-Medium.woff2') format('woff2');
   font-style: normal;
   font-weight: 500;
 }
@@ -149,10 +149,10 @@ h1 a {
   display: none;
   background-color: var(--text-color);
   background-size: var(--icon-size);
-  -webkit-mask-image: url(../assets/ic_close_black_24dp.svg);
+  -webkit-mask-image: url(./assets/ic_close_black_24dp.svg);
   -webkit-mask-position: 50% 50%;
   -webkit-mask-repeat: no-repeat;
-  mask-image: url(../assets/ic_close_black_24dp.svg);
+  mask-image: url(./assets/ic_close_black_24dp.svg);
   mask-position: 50% 50%;
   mask-repeat: no-repeat;
   cursor: pointer;
@@ -183,10 +183,10 @@ h1 a {
   cursor: pointer;
   background-color: var(--text-color);
   background-size: var(--icon-size);
-  -webkit-mask-image: url(../assets/ic_menu_black_24dp.svg);
+  -webkit-mask-image: url(./assets/ic_menu_black_24dp.svg);
   -webkit-mask-position: 50% 50%;
   -webkit-mask-repeat: no-repeat;
-  mask-image: url(../assets/ic_menu_black_24dp.svg);
+  mask-image: url(./assets/ic_menu_black_24dp.svg);
   mask-position: 50% 50%;
   mask-repeat: no-repeat;
 }
@@ -252,10 +252,10 @@ body.home #panel #sections {
   border: 0px;
   background-color: var(--text-color);
   background-size: var(--icon-size);
-  -webkit-mask-image: url(../assets/ic_search_black_24dp.svg);
+  -webkit-mask-image: url(./assets/ic_search_black_24dp.svg);
   -webkit-mask-position: 0 50%;
   -webkit-mask-repeat: no-repeat;
-  mask-image: url(../assets/ic_search_black_24dp.svg);
+  mask-image: url(./assets/ic_search_black_24dp.svg);
   mask-position: 0 50%;
   mask-repeat: no-repeat;
   font-family: 'Roboto Mono', monospace;
@@ -267,7 +267,7 @@ body.home #panel #sections {
   font-weight: 500;
   color: var(--text-color);
   border: 0px;
-  background-image: url(ic_arrow_drop_down_black_24dp.svg);
+  background-image: url(./assets/ic_arrow_drop_down_black_24dp.svg);
   background-size: var(--icon-size);
   background-repeat: no-repeat;
   background-position: right center;
