@@ -43,8 +43,8 @@ export default {
     isDev &&
       serve({
         open: true,
-        contentBase: ['.'],
-        openPage: '/public/index.html',
+        contentBase: ['public', '.'],
+        openPage: '/',
         port: 3000,
       }),
     isDev &&
