@@ -1,0 +1,31 @@
+{
+  "Manual": {
+    "Getting Started": {
+      "Installation": "manual/Installation",
+      "Creating a scene": "manual/Creating-a-scene"
+    }
+  },
+
+  "API": {
+    "Base": {
+      "PhysicsControls": "api/base/PhysicsControls",
+      "PhysicsCharacterControls": "api/base/PhysicsCharacterControls"
+    },
+
+    "FirstPerson": {
+      "KeyboardControls": "api/FirstPerson/FirstPersonKeyboardControls",
+      "MouseDragControls": "api/FirstPerson/FirstPersonMouseDragControls",
+      "PointerLockControls": "api/FirstPerson/FirstPersonPointerLockControls"
+    },
+
+    "ThirdPerson": {
+      "KeyboardControls": "api/ThirdPerson/ThirdPersonKeyboardControls",
+      "MouseDragControls": "api/ThirdPerson/ThirdPersonMouseDragControls",
+      "PointerLockControls": "api/ThirdPerson/ThirdPersonPointerLockControls"
+    },
+
+    "Helpers": {
+      "PhysicsControlsHelper": "api/helpers/PhysicsControlsHelper"
+    }
+  }
+}

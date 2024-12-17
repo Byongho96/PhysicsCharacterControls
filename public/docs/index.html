@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>GameControls docs</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <link rel="shortcut icon" href="../assets/favicon_white.ico" media="(prefers-color-scheme: dark)" />
+    <link rel="shortcut icon" href="../assets/favicon.ico" media="(prefers-color-scheme: light)" />
+    <link rel="stylesheet" type="text/css" href="../index.css" />
+  </head>
+  <body>
+    <div id="panel">
+      <div id="header">
+        <h1><a href="/docs">GameControls</a></h1>
+
+        <div id="sections">
+          <span class="selected">docs</span>
+          <a href="../examples/#first-person_keyboard_controls">examples</a>
+        </div>
+
+        <div id="expandButton"></div>
+      </div>
+
+      <div id="panelScrim"></div>
+
+      <div id="contentWrapper">
+        <div id="inputWrapper">
+          <input
+            placeholder=""
+            type="text"
+            id="filterInput"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+          <div id="clearSearchButton"></div>
+        </div>
+        <div id="content"></div>
+      </div>
+    </div>
+
+    <iframe name="viewer"></iframe>
+
+    <script>
+      const panel = document.getElementById('panel');
+      const content = document.getElementById('content');
+      const expandButton = document.getElementById('expandButton');
+      const clearSearchButton = document.getElementById('clearSearchButton');
+      const panelScrim = document.getElementById('panelScrim');
+      const filterInput = document.getElementById('filterInput');
+      let iframe = document.querySelector('iframe');
+
+      const exampleLink = document.querySelector('#sections > a');
+      const exampleDefaultLink = exampleLink.href;
+
+      const pageProperties = {};
+      const titles = {};
+      const unorderedListElements = [];
+
+      let navigation;
+
+      init();
+
+      async function init() {
+        const list = await (await fetch('list.json')).json();
+
+        // Functionality for hamburger button (on small devices)
+
+        expandButton.onclick = function (event) {
+          event.preventDefault();
+          panel.classList.toggle('open');
+        };
+
+        panelScrim.onclick = function (event) {
+          event.preventDefault();
+          panel.classList.toggle('open');
+        };
+
+        // Functionality for search/filter input field
+
+        filterInput.onfocus = function () {
+          panel.classList.add('searchFocused');
+        };
+
+        filterInput.onblur = function () {
+          if (filterInput.value === '') {
+            panel.classList.remove('searchFocused');
+          }
+        };
+
+        filterInput.oninput = function () {
+          updateFilter();
+        };
+
+        clearSearchButton.onclick = function () {
+          filterInput.value = '';
+          updateFilter();
+          filterInput.focus();
+        };
+
+        // Activate content and title change on browser navigation
+
+        window.onpopstate = createNewIframe;
+
+        // Create the navigation panel and configure the iframe
+
+        createNavigation(list);
+        createNewIframe();
+
+        // Handle search query
+
+        const search = window.location.search;
+
+        filterInput.value = extractQuery();
+
+        if (filterInput.value !== '') {
+          panel.classList.add('searchFocused');
+
+          updateFilter();
+        } else {
+          updateExampleLink('');
+        }
+      }
+
+      // Navigation Panel
+
+      function createLink(pageName, pageURL) {
+        const link = document.createElement('a');
+        link.href = pageURL + '.html';
+        link.textContent = pageName;
+        link.setAttribute('target', 'viewer'); // open in iframe#viewer
+        link.addEventListener('click', function (event) {
+          if (event.button !== 0 || event.ctrlKey || event.altKey || event.metaKey) return;
+
+          window.location.hash = pageURL; // sync URL with iframe
+          panel.classList.remove('open');
+
+          content.querySelectorAll('a').forEach(function (item) {
+            item.classList.remove('selected');
+          });
+
+          link.classList.add('selected');
+        });
+
+        return link;
+      }
+
+      function createNavigation(list) {
+        if (navigation !== undefined) {
+          content.removeChild(navigation);
+        }
+
+        // Create the navigation panel using data from list.js
+
+        navigation = document.createElement('div');
+        content.appendChild(navigation);
+
+        const selectedPageURL = window.location.hash.substring(1);
+
+        for (const section in list) {
+          // Create sections
+          const categories = list[section];
+
+          const sectionHead = document.createElement('h2');
+          sectionHead.textContent = section;
+          navigation.appendChild(sectionHead);
+
+          for (const category in categories) {
+            // Create categories
+
+            const pages = categories[category];
+
+            const categoryContainer = document.createElement('div');
+            navigation.appendChild(categoryContainer);
+
+            const categoryHead = document.createElement('h3');
+            categoryHead.textContent = category;
+            categoryContainer.appendChild(categoryHead);
+
+            const categoryContent = document.createElement('ul');
+            categoryContainer.appendChild(categoryContent);
+
+            for (const pageName in pages) {
+              // Create page links
+
+              const pageURL = pages[pageName];
+
+              // Localisation
+
+              const listElement = document.createElement('li');
+              categoryContent.appendChild(listElement);
+
+              const linkElement = createLink(pageName, pageURL);
+              listElement.appendChild(linkElement);
+
+              if (pageURL === selectedPageURL) {
+                linkElement.classList.add('selected');
+              }
+
+              // Gather the main properties for the current subpage
+
+              pageProperties[pageName] = {
+                section: section,
+                category: category,
+                pageURL: pageURL,
+                linkElement: linkElement,
+                listElement: listElement,
+              };
+
+              // Gather the document titles (used for easy access on browser navigation)
+
+              titles[pageURL] = pageName;
+            }
+
+            // Gather the category elements for easy access on filtering
+
+            unorderedListElements.push(categoryContent);
+          }
+        }
+      }
+
+      // Filtering
+
+      function extractQuery() {
+        const search = window.location.search;
+
+        if (search.indexOf('?q=') !== -1) {
+          return decodeURI(search.slice(3));
+        }
+
+        return '';
+      }
+
+      function createRegExp(string) {
+        string = string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // https://stackoverflow.com/a/6969486/5250847
+
+        string = '(?=.*' + string.split(' ').join(')(?=.*') + ')'; // match all words, in any order
+
+        return new RegExp(string, 'gi');
+      }
+
+      function displayFilteredPanel(regExp) {
+        // Show/hide pages depending on the search query
+
+        for (let pageName in pageProperties) {
+          const linkElement = pageProperties[pageName].linkElement;
+          const listElement = pageProperties[pageName].listElement;
+
+          const filterResults = pageName.match(regExp);
+
+          if (filterResults !== null && filterResults.length > 0) {
+            pageName = pageName.replaceAll(regExp, '<b>$&</b>');
+            linkElement.innerHTML = pageName;
+            listElement.classList.remove('hidden');
+          } else {
+            listElement.classList.add('hidden');
+          }
+        }
+
+        // Show/hide categories depending on their content
+
+        unorderedListElements.forEach(function (unorderedList) {
+          const pages = unorderedList.children;
+          const pagesLength = pages.length;
+          const categoryClassList = unorderedList.parentElement.classList;
+
+          let hideCategory = true;
+
+          for (let i = 0; i < pagesLength; i++) {
+            const pageClassList = pages[i].classList;
+            if (!pageClassList.contains('hidden')) {
+              hideCategory = false;
+              break;
+            }
+          }
+
+          // If and only if all page names are hidden, hide the whole category
+
+          if (hideCategory) {
+            categoryClassList.add('hidden');
+          } else {
+            categoryClassList.remove('hidden');
+          }
+        });
+      }
+
+      function updateExampleLink(search) {
+        if (search) {
+          const link = exampleLink.href.split(/[?#]/)[0];
+          exampleLink.href = `${link}?q=${search}`;
+        } else {
+          exampleLink.href = exampleDefaultLink;
+        }
+      }
+
+      function updateFilter() {
+        let search = filterInput.value.trim();
+        search = search.replace(/\\s+/gi, ' '); // replace multiple whitespaces with a single one
+
+        if (search !== '') {
+          window.history.replaceState({}, '', '?q=' + search + window.location.hash);
+        } else {
+          window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+        }
+
+        const regExp = createRegExp(search);
+
+        displayFilteredPanel(regExp);
+
+        updateExampleLink(search);
+      }
+
+      // iframe content
+
+      function splitByDelimiter(pageURL, oldDelimiter, newDelimiter) {
+        // decompose the page URL to use it for the iframe
+        // 'url/class.property' -> ['url/class', '#property']
+
+        let parts = [];
+
+        const dotIndex = pageURL.indexOf(oldDelimiter);
+
+        if (dotIndex !== -1) {
+          parts = pageURL.split(oldDelimiter);
+          parts[1] = newDelimiter + parts[1];
+        } else {
+          parts[0] = pageURL;
+          parts[1] = '';
+        }
+
+        return parts;
+      }
+
+      function createNewIframe() {
+        // Change the content displayed in the iframe
+
+        const hash = window.location.hash.substring(1);
+        const splitHash = splitByDelimiter(hash, '.', '#');
+
+        // Creating a new Iframe instead of assigning a new src is
+        // a cross-browser solution to allow normal browser navigation;
+        // - only assigning a new src would result in two history states each time.
+
+        // Note: iframe.contentWindow.location.replace(hash) should work, too,
+        // but it doesn't work in Edge with links from the subpages!
+
+        let subtitle;
+
+        const oldIframe = iframe;
+        iframe = oldIframe.cloneNode();
+
+        iframe.style.display = 'none';
+
+        if (hash && titles[splitHash[0]]) {
+          iframe.onload = function () {
+            iframe.style.display = 'unset';
+          };
+
+          iframe.src = splitHash[0] + '.html' + splitHash[1];
+          subtitle = titles[splitHash[0]] + splitHash[1] + ' - ';
+        } else {
+          iframe.src = '';
+          subtitle = '';
+        }
+
+        document.body.replaceChild(iframe, oldIframe);
+        document.title = subtitle + 'GameControl docs';
+      }
+
+      // Sub-pages Routing
+      // mapping the page name [class.property] to the relative URL
+
+      function getPageURL(pageName) {
+        // 'class.property' -> 'url/class.property'
+
+        const splitPageName = splitByDelimiter(pageName, '.', '.');
+
+        const currentProperties = pageProperties[splitPageName[0]];
+
+        if (currentProperties) {
+          return currentProperties.pageURL + splitPageName[1];
+        } else {
+          return null;
+        }
+      }
+
+      function setUrlFragment(pageName) {
+        const pageURL = getPageURL(pageName);
+
+        if (pageURL) {
+          window.location.hash = pageURL;
+
+          createNewIframe();
+        }
+      }
+
+      // ASCII Art
+
+      console.log(
+        [
+          String.raw` ________  ________  _____ ______   _______                                  `,
+          String.raw`|\   ____\|\   __  \|\   _ \  _   \|\  ___ \                                 `,
+          String.raw`\ \  \___|\ \  \|\  \ \  \\\__\ \  \ \   __/|                                `,
+          String.raw` \ \  \  __\ \   __  \ \  \\|__| \  \ \  \_|/__                              `,
+          String.raw`  \ \  \|\  \ \  \ \  \ \  \    \ \  \ \  \_|\ \                             `,
+          String.raw`   \ \_______\ \__\ \__\ \__\    \ \__\ \_______\                            `,
+          String.raw`    \|_______|\|__|\|__|\|__|     \|__|\|_______|                            `,
+          String.raw`                                                                             `,
+          String.raw`                                                                             `,
+          String.raw`                                                                             `,
+          String.raw` ________  ________  ________   _________  ________  ________  ___           `,
+          String.raw`|\   ____\|\   __  \|\   ___  \|\___   ___\\   __  \|\   __  \|\  \          `,
+          String.raw`\ \  \___|\ \  \|\  \ \  \\ \  \|___ \  \_\ \  \|\  \ \  \|\  \ \  \         `,
+          String.raw` \ \  \    \ \  \\\  \ \  \\ \  \   \ \  \ \ \   _  _\ \  \\\  \ \  \        `,
+          String.raw`  \ \  \____\ \  \\\  \ \  \\ \  \   \ \  \ \ \  \\  \\ \  \\\  \ \  \____   `,
+          String.raw`   \ \_______\ \_______\ \__\\ \__\   \ \__\ \ \__\\ _\\ \_______\ \_______\ `,
+          String.raw`    \|_______|\|_______|\|__| \|__|    \|__|  \|__|\|__|\|_______|\|_______| `,
+        ].join('\n'),
+      );
+    </script>
+  </body>
+</html>
