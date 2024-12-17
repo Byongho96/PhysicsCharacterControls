@@ -1,0 +1,12 @@
+{
+  "FirstPerson": [
+    "first-person_keyboard_controls",
+    "first-person_mousedrag_controls",
+    "first-person_pointerlock_controls"
+  ],
+  "ThirdPerson": [
+    "third-person_keyboard_controls",
+    "third-person_mousedrag_controls",
+    "third-person_pointerlock_controls"
+  ]
+}
