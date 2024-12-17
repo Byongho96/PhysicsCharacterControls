@@ -383,8 +383,7 @@ class ThirdPersonMouseDragControls extends PhysicsCharacterControls {
     this._spherical.theta -= (event.movementX * this.rotateSpeed) / 100;
     this._spherical.phi -= (event.movementY * this.rotateSpeed) / 100;
 
-    // Clamp the camera angles to prevent flipping
-    this._spherical.phi = Math.max(0.01, Math.min(Math.PI - 0.01, this._spherical.phi));
+    this._spherical.makeSafe();
   };
 
   /** Handles mouse wheel events to zoom in and out. */

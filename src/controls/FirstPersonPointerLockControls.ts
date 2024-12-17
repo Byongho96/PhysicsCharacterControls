@@ -114,6 +114,8 @@ class FirstPersonPointerLockControls extends PhysicsControls {
       ...physicsOptions,
     });
 
+    this.object.rotation.order = 'YZX';
+
     this.actionKeys = actionKeys ?? DEFAULT_ACTION_KEYS;
 
     this.enableZoom = cameraOptions?.enableZoom ?? true;

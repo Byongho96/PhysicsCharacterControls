@@ -315,7 +315,7 @@ class ThirdPersonKeyboardControls extends PhysicsCharacterControls {
       this._spherical.theta -= rotationSpeed;
     }
 
-    this._spherical.phi = Math.max(0.01, Math.min(Math.PI - 0.01, this._spherical.phi));
+    this._spherical.makeSafe();
 
     // Update camera position with lerp
     this._cameraLookAtPosition.copy(this.object.position).add(this.cameraLookAtOffset);

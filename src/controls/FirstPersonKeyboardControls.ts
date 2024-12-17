@@ -131,6 +131,8 @@ class FirstPersonKeyboardControls extends PhysicsControls {
       ...physicsOptions,
     });
 
+    this.object.rotation.order = 'YZX';
+
     this.actionKeys = actionKeys ?? DEFAULT_ACTION_KEYS;
 
     this.enableZoom = cameraOptions?.enableZoom ?? true;
@@ -261,7 +263,7 @@ class FirstPersonKeyboardControls extends PhysicsControls {
       this.object.rotateX(-this.rotateSpeed * delta);
     }
 
-    this.object.rotation.x = Math.min(Math.max(this.object.rotation.x, -Math.PI / 2), Math.PI / 2);
+    this.object.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.object.rotation.x));
 
     // Jump if grounded.
     if (keyStates.jump && this.isGrounded) {
